@@ -1,0 +1,91 @@
+---
+title: "An agent that does the data science, not just the SQL"
+tagline: "71% on BIRD — eight points above GPT-4o"
+role: "Backend & AI engineer — architecture and evaluation"
+org: "UCLA Trustworthy AI Labs"
+period: "Jan 2026 — May 2026"
+order: 3
+featured: true
+stack: ["Python", "AWS Lambda", "API Gateway", "AWS CDK", "Docker", "PostgreSQL", "Amazon S3"]
+figures:
+  - diagram: "benchmark"
+    caption: "Task completion on BIRD against GPT-4o on the same tasks and schemas."
+  - diagram: "eval-matrix"
+    caption: "The harness's coverage. Scoring end-to-end pass/fail tells you the agent was wrong; scoring across this grid tells you which tool, schema shape, or question class lost — which is what the three architectural fixes came from."
+  - diagram: "event-sourcing"
+    caption: "State as a fold over an append-only log: concurrent steps can't clobber each other, and a failure leaves a record rather than a corrupted document."
+metrics:
+  - value: "71%"
+    label: "Task completion on the BIRD benchmark"
+  - value: "+8 pts"
+    label: "Above GPT-4o on the same benchmark"
+  - value: "400+"
+    label: "Test sessions with zero state loss"
+  - value: "34"
+    label: "Table schemas in the eval harness"
+summary: "At UCLA Trustworthy AI Labs I built an agent that plans and executes multi-step analyses from a plain-language prompt. It completed 71% of BIRD benchmark tasks — eight points above GPT-4o."
+links:
+  - label: "BIRD benchmark"
+    href: "https://bird-bench.github.io/"
+images: []
+---
+
+{/* REVIEW: fully public work on a public benchmark — nothing here needs sanitizing,
+    which is why it's valuable on the site. Add a repo link if it's public. */}
+
+## Context
+
+Most "talk to your data" systems are text-to-SQL: one prompt in, one query out. Real analysis
+isn't shaped like that. It's *plan, query, look at what came back, revise, query again* — and
+the interesting failures happen between the steps, not inside them.
+
+[BIRD](https://bird-bench.github.io/) is a good measuring stick because its questions require
+reasoning over messy, realistic schemas rather than clean toy tables.
+
+## The problem
+
+**Planning.** Decompose a vague request into ordered steps, pick the right tool for each, and
+recognize when a result means the plan was wrong.
+
+**State**, which people underestimate. A multi-step agent on serverless has no natural place
+to keep its own state: steps land on different Lambda invocations, run concurrently, and can
+fail partway. Losing state mid-analysis doesn't just fail the task — it fails it *silently*,
+leaving a plausible partial answer.
+
+## What I built
+
+**A serverless backend sized for concurrent inference.** Dockerized Lambda behind API Gateway,
+provisioned with CDK. Containerized because the dependency surface for analysis tooling is
+far too large to zip; CDK because the infrastructure had to be reproducible for anyone
+rerunning the experiments.
+
+**An event-sourced persistence layer.** Every step appends an immutable event to PostgreSQL,
+with larger artifacts in S3; current state is a fold over the log. That solved distributed
+state outright — concurrent steps can't clobber each other, a failed step leaves a record
+rather than corruption, and any session replays exactly. **400+ sessions, zero data loss.**
+
+**A data-centric evaluation harness**, which is what actually produced the result (Fig. 2).
+Instead of end-to-end pass/fail, it spans **34 schemas, 120+ question types, and 20+
+tool-calling functions**, so a failure attributes to a specific tool, schema shape, or
+question class. That attribution drove **three architectural changes worth 11% accuracy** —
+findable only because the harness said where the losses were.
+
+## The hard part
+
+**Resisting the urge to fix the prompt.** Every failure looks like a prompting problem until
+you have per-tool attribution. Once the harness could say "this question class fails on this
+tool," the fixes turned out to be architectural — tool granularity and the shape of what got
+returned to the planner — not wording.
+
+## Outcome
+
+**71% on BIRD, eight points above GPT-4o** on the same tasks (Fig. 1). Beating a frontier
+model wasn't a modeling win: the leverage was evaluation and architecture — knowing precisely
+where the agent lost, and having state guarantees strong enough for multi-step plans to run
+without silently degrading.
+
+## What I'd do differently
+
+Build the harness first. I built it third, and every improvement before it was guesswork I
+couldn't measure. On an agent project the harness isn't test infrastructure — it's the
+instrument you're doing the work with.

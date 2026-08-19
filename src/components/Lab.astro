@@ -1,0 +1,62 @@
+---
+import { lab } from "../data/site";
+import Icon from "./Icon.astro";
+
+/**
+ * Three panels in a row on desktop, not the 2×2 the case studies use — a wider,
+ * shorter shape reads as "smaller things" without a label having to say so.
+ */
+---
+
+<ul class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+  {
+    lab.map((p, i) => (
+      <li
+        class={`${p.accent} flex h-full flex-col border border-rule bg-paper-2/25 transition-colors duration-500 hover:border-rule-2 hover:bg-paper-2/70`}
+        data-reveal
+        style={`--reveal-delay:${i * 70}ms`}>
+        <div class="h-[3px] w-full bg-accent/70" aria-hidden="true" />
+
+        {p.preview && (
+          <div class="overflow-hidden border-b border-rule bg-paper">
+            <img
+              src={p.preview.src}
+              alt={p.preview.alt}
+              width={p.preview.width}
+              height={p.preview.height}
+              class="h-32 w-full object-cover sm:h-36"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        )}
+
+        <div class="flex flex-1 flex-col p-6">
+          <p class="label !text-accent">{p.lane}</p>
+          <h3 class="display mt-3 text-[1.375rem] text-ink">{p.title}</h3>
+          <p class="mt-3 text-[0.9375rem] leading-relaxed text-ink-2">{p.blurb}</p>
+
+          <ul class="mt-auto flex flex-wrap gap-1.5 pt-6">
+            {p.tags.map((t) => (
+              <li class="chip">{t}</li>
+            ))}
+          </ul>
+
+          {/* The repo is the whole point of this section, so the link is explicit
+              rather than the panel being one big anchor. */}
+          <a
+            href={p.repo}
+            target="_blank"
+            rel="noopener"
+            class="group mt-5 inline-flex items-center gap-2 self-start text-[0.875rem] text-ink underline decoration-rule-2 decoration-1 underline-offset-[5px] transition-colors duration-200 hover:decoration-accent">
+            Read the code
+            <Icon
+              name="arrow"
+              class="h-3.5 w-3.5 text-ink-3 transition-transform duration-300 ease-settle group-hover:translate-x-1"
+            />
+          </a>
+        </div>
+      </li>
+    ))
+  }
+</ul>

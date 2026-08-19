@@ -1,0 +1,56 @@
+---
+/**
+ * The evaluation harness's coverage, one dot per unit. Drawn rather than stated
+ * because the point is the size of the grid a failure gets attributed within.
+ */
+interface Grid {
+  label: string;
+  count: number;
+  shown: number;
+  cols: number;
+  x: number;
+}
+
+const GRIDS: Grid[] = [
+  { label: "34 table schemas", count: 34, shown: 34, cols: 7, x: 8 },
+  { label: "120+ question types", count: 120, shown: 120, cols: 12, x: 252 },
+  { label: "20+ tool functions", count: 20, shown: 20, cols: 5, x: 552 },
+];
+
+const STEP = 15;
+const TOP = 44;
+
+const dots = (g: Grid) =>
+  Array.from({ length: g.shown }, (_, i) => ({
+    cx: g.x + 4 + (i % g.cols) * STEP,
+    cy: TOP + Math.floor(i / g.cols) * STEP,
+  }));
+---
+
+<svg class="dgm" viewBox="0 0 720 208" role="img" aria-labelledby="dgm-eval-title">
+  <title id="dgm-eval-title">
+    Three dot grids showing the evaluation harness's coverage: 34 table schemas, over 120
+    question types, and over 20 tool-calling functions. Every observed failure attributes to a
+    cell in that space rather than to the agent as a whole.
+  </title>
+
+  {
+    GRIDS.map((g) => (
+      <g>
+        <text class="dgm-label" x={g.x} y="20">
+          {g.label}
+        </text>
+        <path class="dgm-line" d={`M${g.x} 28 H${g.x + (g.cols - 1) * STEP + 8}`} />
+        {dots(g).map((d) => (
+          <circle cx={d.cx} cy={d.cy} r="2.6" fill="var(--color-accent)" fill-opacity="0.55" />
+        ))}
+      </g>
+    ))
+  }
+
+  <path class="dgm-line" d="M8 186 H712"></path>
+  <text class="dgm-mono" x="8" y="202">
+    every failure attributes to a cell — tool × schema × question class, not "the agent was
+    wrong"
+  </text>
+</svg>

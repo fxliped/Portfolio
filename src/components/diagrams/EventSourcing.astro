@@ -1,0 +1,82 @@
+---
+/** Serverless agent whose state is a fold over an append-only event log. */
+---
+
+<svg class="dgm" viewBox="0 0 720 240" role="img" aria-labelledby="dgm-events-title">
+  <title id="dgm-events-title">
+    Requests enter through API Gateway to a Dockerized Lambda. Each step appends an immutable
+    event to a log stored in PostgreSQL and S3. Current state is a fold over that log, which
+    makes any session replayable.
+  </title>
+
+  <g>
+    <rect class="dgm-box" x="8" y="30" width="104" height="42" rx="3"></rect>
+    <text class="dgm-title" x="60" y="48" text-anchor="middle">API Gateway</text>
+    <text class="dgm-sub" x="60" y="62" text-anchor="middle">concurrent requests</text>
+  </g>
+
+  <g>
+    <rect class="dgm-box" x="150" y="30" width="120" height="42" rx="3"></rect>
+    <text class="dgm-title" x="210" y="48" text-anchor="middle">Lambda</text>
+    <text class="dgm-sub" x="210" y="62" text-anchor="middle">Docker · CDK</text>
+  </g>
+
+  <g class="dgm-line">
+    <path d="M112 51 H144"></path>
+    <path d="M138 47 l6 4 -6 4"></path>
+  </g>
+
+  <!-- Append-only event log -->
+  <text class="dgm-label" x="320" y="104">append-only event log</text>
+  <path class="dgm-line" d="M150 118 H640"></path>
+  <g>
+    <circle class="dgm-dot" cx="170" cy="118" r="3.5"></circle>
+    <circle class="dgm-dot" cx="264" cy="118" r="3.5"></circle>
+    <circle class="dgm-dot" cx="358" cy="118" r="3.5"></circle>
+    <circle class="dgm-dot" cx="452" cy="118" r="3.5"></circle>
+    <circle class="dgm-dot" cx="546" cy="118" r="3.5"></circle>
+    <text class="dgm-mono" x="170" y="138" text-anchor="middle">plan</text>
+    <text class="dgm-mono" x="264" y="138" text-anchor="middle">query</text>
+    <text class="dgm-mono" x="358" y="138" text-anchor="middle">observe</text>
+    <text class="dgm-mono" x="452" y="138" text-anchor="middle">revise</text>
+    <text class="dgm-mono" x="546" y="138" text-anchor="middle">answer</text>
+  </g>
+
+  {/* Two arrows on the same axis, offset: writes go down, state comes back up.
+      A single wrap-around path closes visually into a box around the log. */}
+  <g class="dgm-line">
+    <path d="M192 72 V114"></path>
+    <path d="M188 108 l4 6 4 -6"></path>
+  </g>
+  <g class="dgm-line-accent">
+    <path d="M228 114 V76"></path>
+    <path d="M224 82 l4 -6 4 6"></path>
+  </g>
+  <text class="dgm-mono" x="150" y="94" text-anchor="end" style="fill:var(--color-ink-3)">
+    append
+  </text>
+  <text class="dgm-mono" x="240" y="94" style="fill:var(--color-accent)">fold</text>
+
+  <!-- Durable stores -->
+  <g>
+    <rect class="dgm-box" x="430" y="30" width="100" height="42" rx="3"></rect>
+    <text class="dgm-title" x="480" y="48" text-anchor="middle">PostgreSQL</text>
+    <text class="dgm-sub" x="480" y="62" text-anchor="middle">events</text>
+  </g>
+  <g>
+    <rect class="dgm-box" x="548" y="30" width="92" height="42" rx="3"></rect>
+    <text class="dgm-title" x="594" y="48" text-anchor="middle">S3</text>
+    <text class="dgm-sub" x="594" y="62" text-anchor="middle">artifacts</text>
+  </g>
+  <g class="dgm-line" style="stroke-dasharray:3 4">
+    <path d="M480 114 V76"></path>
+    <path d="M594 114 V76"></path>
+  </g>
+
+  <text class="dgm-sub" x="150" y="172" style="fill:var(--color-accent)">
+    state = fold(events) — any session replays exactly
+  </text>
+
+  <path class="dgm-line" d="M8 206 H640"></path>
+  <text class="dgm-mono" x="8" y="226">400+ sessions · zero data loss · concurrent steps cannot clobber</text>
+</svg>

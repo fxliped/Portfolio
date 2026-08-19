@@ -1,0 +1,192 @@
+---
+import "@fontsource-variable/dm-sans";
+import "@fontsource-variable/newsreader";
+import "@fontsource-variable/newsreader/wght-italic.css";
+import "../styles/global.css";
+import { ClientRouter } from "astro:transitions";
+import Nav from "../components/Nav.astro";
+import Footer from "../components/Footer.astro";
+import { site } from "../data/site";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = `${site.name} — ${site.role}`,
+  description = `${site.role}. ${site.positioning}. ${site.currently}`,
+} = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="color-scheme" content="light dark" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    {/* Absolute URL required — every platform fetches this from its own servers
+        and a relative path silently yields a blank card. Source: pages/og.astro. */}
+    <meta property="og:image" content={new URL("/og.png", Astro.site).href} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={`${site.name} — ${site.positioning}`} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content={new URL("/og.png", Astro.site).href} />
+
+    <link rel="sitemap" href="/sitemap-index.xml" />
+
+    {/* Must run before first paint, and must not be deferred, or the wrong
+        theme flashes. is:inline keeps Astro from bundling it as a module. */}
+    <script is:inline>
+      (function () {
+        function apply() {
+          try {
+            var stored = localStorage.getItem("theme");
+            var dark =
+              stored === "dark" ||
+              (!stored && window.matchMedia("(prefers-color-scheme: dark)").matches);
+            document.documentElement.dataset.theme = dark ? "dark" : "light";
+          } catch (e) {
+            document.documentElement.dataset.theme = "light";
+          }
+        }
+
+        apply();
+
+        /* A client-side navigation replaces <html>'s attributes with the ones the
+           server sent, and the server never sends data-theme — it only ever
+           exists because this script set it. Without re-applying here, opening a
+           case study snaps the whole site back to light. astro:after-swap fires
+           before paint, so there's no flash; the listener is on `document`, which
+           survives every swap, so registering it once is enough. */
+        document.addEventListener("astro:after-swap", apply);
+      })();
+    </script>
+
+    <ClientRouter />
+  </head>
+
+  <body class="min-h-dvh">
+    <a
+      href="#main"
+      class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded focus:border focus:border-rule focus:bg-paper focus:px-4 focus:py-2 focus:text-sm">
+      Skip to content
+    </a>
+
+    <Nav />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer />
+
+    <script>
+      /**
+       * Scroll reveal + count-up + theme toggle.
+       *
+       * Reveal and counters observe once and unobserve, so nothing re-animates
+       * on scroll-up. Both are inert under prefers-reduced-motion — the CSS
+       * already leaves revealed elements visible, and counters print their
+       * final value immediately.
+       */
+      function initTheme() {
+        const root = document.documentElement;
+        const buttons = document.querySelectorAll<HTMLButtonElement>("[data-theme-toggle]");
+
+        const sync = () => {
+          const dark = root.dataset.theme === "dark";
+          buttons.forEach((b) => {
+            b.setAttribute("aria-pressed", String(dark));
+            b.setAttribute("aria-label", dark ? "Switch to light theme" : "Switch to dark theme");
+          });
+        };
+
+        buttons.forEach((b) =>
+          b.addEventListener("click", () => {
+            const next = root.dataset.theme === "dark" ? "light" : "dark";
+            root.dataset.theme = next;
+            try {
+              localStorage.setItem("theme", next);
+            } catch {
+              /* private mode — the toggle still works for this page */
+            }
+            sync();
+          }),
+        );
+
+        sync();
+      }
+
+      function initMotion() {
+        const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        const revealables = document.querySelectorAll<HTMLElement>("[data-reveal]");
+        if (reduced) {
+          revealables.forEach((el) => el.classList.add("is-in"));
+        } else {
+          const io = new IntersectionObserver(
+            (entries) => {
+              for (const entry of entries) {
+                if (!entry.isIntersecting) continue;
+                entry.target.classList.add("is-in");
+                io.unobserve(entry.target);
+              }
+            },
+            { rootMargin: "0px 0px -8% 0px", threshold: 0.06 },
+          );
+          revealables.forEach((el) => io.observe(el));
+        }
+
+        const counters = document.querySelectorAll<HTMLElement>("[data-count]");
+        const render = (el: HTMLElement, n: number) => {
+          el.textContent = n.toLocaleString("en-US");
+        };
+
+        if (reduced) {
+          counters.forEach((el) => render(el, Number(el.dataset.count ?? 0)));
+          return;
+        }
+
+        const countIO = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (!entry.isIntersecting) continue;
+              const el = entry.target as HTMLElement;
+              countIO.unobserve(el);
+
+              const target = Number(el.dataset.count ?? 0);
+              const duration = 1100;
+              const start = performance.now();
+
+              const tick = (now: number) => {
+                const p = Math.min((now - start) / duration, 1);
+                // easeOutQuart — matches the reveal's decelerating settle.
+                render(el, Math.round(target * (1 - Math.pow(1 - p, 4))));
+                if (p < 1) requestAnimationFrame(tick);
+              };
+              requestAnimationFrame(tick);
+            }
+          },
+          { threshold: 0.35 },
+        );
+        counters.forEach((el) => countIO.observe(el));
+      }
+
+      document.addEventListener("astro:page-load", () => {
+        initTheme();
+        initMotion();
+      });
+    </script>
+  </body>
+</html>

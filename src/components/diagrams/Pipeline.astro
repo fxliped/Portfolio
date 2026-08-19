@@ -1,0 +1,68 @@
+---
+/** Tableau workbook → typed contract → chunked Markdown → S3 → agent. */
+---
+
+<svg class="dgm" viewBox="0 0 720 196" role="img" aria-labelledby="dgm-pipeline-title">
+  <title id="dgm-pipeline-title">
+    A workbook archive is extracted into a typed contract, transformed into chunked Markdown,
+    published to S3, and retrieved by the agent. The extract and transform stages are pure,
+    with no I/O.
+  </title>
+
+  <!-- Source: stacked archive -->
+  <g>
+    <rect class="dgm-box" x="8" y="66" width="86" height="44" rx="3"></rect>
+    <rect class="dgm-box" x="13" y="61" width="86" height="44" rx="3"></rect>
+    <rect class="dgm-box" x="18" y="56" width="86" height="44" rx="3"></rect>
+    <text class="dgm-title" x="61" y="76" text-anchor="middle">.twbx</text>
+    <text class="dgm-sub" x="61" y="90" text-anchor="middle">zip → XML</text>
+    <text class="dgm-sub" x="61" y="128" text-anchor="middle">3,000+ workbooks</text>
+  </g>
+
+  <!-- Pure-layer bracket over extract + transform -->
+  <path class="dgm-line" d="M150 36 v-8 h248 v8"></path>
+  <text class="dgm-label" x="274" y="20" text-anchor="middle">pure — no I/O, no clock</text>
+
+  <g>
+    <rect class="dgm-box" x="150" y="56" width="110" height="44" rx="3"></rect>
+    <text class="dgm-title" x="205" y="76" text-anchor="middle">Extract</text>
+    <text class="dgm-sub" x="205" y="90" text-anchor="middle">typed contract</text>
+  </g>
+
+  <g>
+    <rect class="dgm-box" x="288" y="56" width="110" height="44" rx="3"></rect>
+    <text class="dgm-title" x="343" y="76" text-anchor="middle">Transform</text>
+    <text class="dgm-sub" x="343" y="90" text-anchor="middle">chunked Markdown</text>
+  </g>
+
+  <g>
+    <rect class="dgm-box" x="426" y="56" width="96" height="44" rx="3"></rect>
+    <text class="dgm-title" x="474" y="76" text-anchor="middle">S3</text>
+    <text class="dgm-sub" x="474" y="90" text-anchor="middle">mirror + prune</text>
+  </g>
+
+  <g>
+    <rect class="dgm-box" x="550" y="56" width="106" height="44" rx="3"></rect>
+    <text class="dgm-title" x="603" y="76" text-anchor="middle">Agent</text>
+    <text class="dgm-sub" x="603" y="90" text-anchor="middle">grounded answers</text>
+  </g>
+
+  <!-- Flow arrows -->
+  <g class="dgm-line">
+    <path d="M108 78 H144"></path>
+    <path d="M138 74 l6 4 -6 4"></path>
+    <path d="M260 78 H282"></path>
+    <path d="M276 74 l6 4 -6 4"></path>
+    <path d="M398 78 H420"></path>
+    <path d="M414 74 l6 4 -6 4"></path>
+    <path d="M522 78 H544"></path>
+    <path d="M538 74 l6 4 -6 4"></path>
+  </g>
+
+  <!-- Orchestration rail -->
+  <path class="dgm-line" style="stroke-dasharray:3 4" d="M150 152 H522"></path>
+  <text class="dgm-mono" x="150" y="170">airflow · parallel · resumable · idempotent</text>
+  <circle class="dgm-dot" cx="150" cy="152" r="2.5"></circle>
+  <circle class="dgm-dot" cx="336" cy="152" r="2.5"></circle>
+  <circle class="dgm-dot" cx="522" cy="152" r="2.5"></circle>
+</svg>

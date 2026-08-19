@@ -1,0 +1,21 @@
+---
+interface Props {
+  eyebrow: string;
+  title: string;
+  id?: string;
+  lede?: string;
+  /**
+   * Local accent class ("accent-blue" | "accent-orange" | "accent-purple").
+   * Tints the eyebrow only — the heading and lede stay ink, so colour marks
+   * where a section starts without colouring the reading.
+   */
+  accent?: string;
+}
+const { eyebrow, title, id, lede, accent } = Astro.props;
+---
+
+<div class={`mb-14 ${accent ?? ""}`} id={id} data-reveal>
+  <p class={accent ? "label !text-accent" : "label"}>{eyebrow}</p>
+  <h2 class="display mt-4 text-[2.25rem] text-ink sm:text-[2.75rem]">{title}</h2>
+  {lede && <p class="mt-5 max-w-xl text-[1.0625rem] leading-relaxed text-ink-2">{lede}</p>}
+</div>

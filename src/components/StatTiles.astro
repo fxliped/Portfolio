@@ -1,0 +1,43 @@
+---
+import { stats } from "../data/site";
+
+/**
+ * Divider + indent for a cell in a 2-up (mobile) / 4-up (desktop) grid.
+ * First cell in a row gets neither, so its figure aligns flush with the body
+ * text above it. Returned as one string per case rather than layered classes —
+ * Tailwind resolves conflicting utilities by stylesheet order, not class order,
+ * so `pl-0 sm:pl-0` alongside `sm:pl-6` would be a coin flip.
+ */
+function cellClass(i: number): string {
+  if (i === 0) return "pl-0 sm:pl-0 border-l-0 sm:border-l-0";
+  if (i % 2 === 0) return "pl-0 sm:pl-6 border-l-0 sm:border-l";
+  return "pl-5 sm:pl-6 border-l";
+}
+---
+
+{/* Rule-separated figures rather than boxed cards — the numbers carry the
+    emphasis, so the containers can disappear entirely. */}
+<dl class="grid grid-cols-2 gap-y-8 sm:grid-cols-4 sm:gap-y-0">
+  {
+    stats.map((s, i) => (
+      <div
+        class:list={["border-rule", cellClass(i)]}
+        data-reveal
+        style={`--reveal-delay:${i * 90}ms`}>
+        <dd class="num text-[2.5rem] leading-none text-ink sm:text-[2.75rem]">
+          {
+            s.display ? (
+              <span class="text-[1.75rem] sm:text-[1.875rem]">{s.display}</span>
+            ) : (
+              // prettier-ignore — a line break here renders as a space and
+              // prints "3,000 +" instead of "3,000+".
+              <>{s.prefix}<span data-count={s.value}>0</span>{s.suffix}</>
+            )
+          }
+        </dd>
+        <dt class="mt-3 text-[0.8125rem] font-medium leading-snug text-ink">{s.label}</dt>
+        <p class="mt-1 text-[0.8125rem] leading-snug text-ink-3">{s.hint}</p>
+      </div>
+    ))
+  }
+</dl>

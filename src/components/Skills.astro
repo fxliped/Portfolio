@@ -1,0 +1,21 @@
+---
+import { skills } from "../data/site";
+---
+
+<dl>
+  {
+    skills.map((group, i) => (
+      <div
+        class="grid gap-3 border-t border-rule py-7 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-10"
+        data-reveal
+        style={`--reveal-delay:${i * 70}ms`}>
+        <dt class="label pt-1">{group.group}</dt>
+        <dd class="flex flex-wrap gap-x-5 gap-y-2 text-[0.9375rem] text-ink-2">
+          {group.items.map((item) => (
+            <span>{item}</span>
+          ))}
+        </dd>
+      </div>
+    ))
+  }
+</dl>

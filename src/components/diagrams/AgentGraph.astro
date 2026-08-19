@@ -1,0 +1,88 @@
+---
+/** LangGraph state machine with a repair loop; MCP tools as the tool boundary. */
+---
+
+<svg class="dgm" viewBox="0 0 720 250" role="img" aria-labelledby="dgm-graph-title">
+  <title id="dgm-graph-title">
+    A prompt moves through resolve intent, gather context, draft spec, and validate before
+    emitting a dashboard. Failed validation routes to a repair step and back to draft. Context
+    and validate call MCP tools.
+  </title>
+
+  <text class="dgm-label" x="8" y="18">langgraph</text>
+  <path class="dgm-line" d="M8 28 H636"></path>
+
+  <!-- States -->
+  <g>
+    <rect class="dgm-box" x="8" y="48" width="104" height="42" rx="3"></rect>
+    <text class="dgm-title" x="60" y="66" text-anchor="middle">Resolve</text>
+    <text class="dgm-sub" x="60" y="80" text-anchor="middle">intent</text>
+  </g>
+  <g>
+    <rect class="dgm-box" x="140" y="48" width="104" height="42" rx="3"></rect>
+    <text class="dgm-title" x="192" y="66" text-anchor="middle">Gather</text>
+    <text class="dgm-sub" x="192" y="80" text-anchor="middle">context</text>
+  </g>
+  <g>
+    <rect class="dgm-box" x="272" y="48" width="104" height="42" rx="3"></rect>
+    <text class="dgm-title" x="324" y="66" text-anchor="middle">Draft</text>
+    <text class="dgm-sub" x="324" y="80" text-anchor="middle">spec</text>
+  </g>
+  <g>
+    <rect class="dgm-box" x="404" y="48" width="104" height="42" rx="3"></rect>
+    <text class="dgm-title" x="456" y="66" text-anchor="middle">Validate</text>
+    <text class="dgm-sub" x="456" y="80" text-anchor="middle">against warehouse</text>
+  </g>
+  <g>
+    <rect class="dgm-box" x="536" y="48" width="100" height="42" rx="3"></rect>
+    <text class="dgm-title" x="586" y="66" text-anchor="middle">Emit</text>
+    <text class="dgm-sub" x="586" y="80" text-anchor="middle">dashboard</text>
+  </g>
+
+  <g class="dgm-line">
+    <path d="M112 69 H134"></path>
+    <path d="M128 65 l6 4 -6 4"></path>
+    <path d="M244 69 H266"></path>
+    <path d="M260 65 l6 4 -6 4"></path>
+    <path d="M376 69 H398"></path>
+    <path d="M392 65 l6 4 -6 4"></path>
+    <path d="M508 69 H530"></path>
+    <path d="M524 65 l6 4 -6 4"></path>
+  </g>
+
+  <!-- Repair loop: validate fails → back to draft -->
+  <path class="dgm-line-accent" d="M456 90 v22 H324 v-18"></path>
+  <path class="dgm-line-accent" d="M320 98 l4 -6 4 6"></path>
+  <text class="dgm-sub" x="390" y="126" text-anchor="middle" style="fill:var(--color-accent)">
+    repair
+  </text>
+
+  {/* Tool boundary. No full-width rule here on purpose — the connectors have to
+      cross into the state row, and a divider they cut through reads as a mistake. */}
+  <text class="dgm-label" x="8" y="186">mcp tools</text>
+  <g>
+    <rect class="dgm-box" x="140" y="200" width="104" height="30" rx="3"></rect>
+    <text class="dgm-mono" x="192" y="219" text-anchor="middle">search_kb</text>
+  </g>
+  <g>
+    <rect class="dgm-box" x="256" y="200" width="120" height="30" rx="3"></rect>
+    <text class="dgm-mono" x="316" y="219" text-anchor="middle">resolve_metric</text>
+  </g>
+  <g>
+    <rect class="dgm-box" x="388" y="200" width="120" height="30" rx="3"></rect>
+    <text class="dgm-mono" x="448" y="219" text-anchor="middle">inspect_schema</text>
+  </g>
+  <g>
+    <rect class="dgm-box" x="520" y="200" width="116" height="30" rx="3"></rect>
+    <text class="dgm-mono" x="578" y="219" text-anchor="middle">validate_query</text>
+  </g>
+
+  {/* Connectors run from each tool up to the state that calls it: search_kb and
+      resolve_metric into Gather, inspect_schema and validate_query into Validate. */}
+  <g class="dgm-line" style="stroke-dasharray:3 4">
+    <path d="M180 200 V90"></path>
+    <path d="M300 200 V158 H206 V90"></path>
+    <path d="M436 200 V90"></path>
+    <path d="M562 200 V158 H470 V90"></path>
+  </g>
+</svg>

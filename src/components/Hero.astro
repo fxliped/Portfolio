@@ -1,0 +1,73 @@
+---
+import { site } from "../data/site";
+import Icon from "./Icon.astro";
+import AsciiPortrait from "./AsciiPortrait.astro";
+---
+
+{/* Trimmed to what a first screen should carry: who, what, and one way in.
+    The old version also had a subline, a "Currently" block and four stat tiles —
+    the numbers now live on the work panels, where they have context. */}
+<section class="mx-auto max-w-5xl px-6 pt-36 sm:px-10 sm:pt-44">
+  <div class="grid items-start gap-14 lg:grid-cols-[minmax(0,1fr)_14rem] lg:gap-16">
+    <div>
+      <p class="label" data-reveal>{site.role}</p>
+
+      <h1
+        class="display mt-6 text-[3.25rem] text-ink sm:text-[4.5rem] lg:text-[5.25rem]"
+        data-reveal
+        style="--reveal-delay:70ms">
+        {site.name}
+      </h1>
+
+      {/* The one italic in the design. It carries the positioning line, so the
+          ornament is doing work rather than decorating. */}
+      <p
+        class="display mt-7 max-w-2xl text-[1.75rem] text-ink-2 sm:text-[2.125rem]"
+        data-reveal
+        style="--reveal-delay:140ms">
+        I build the <em class="text-ink">retrieval layer</em> that AI agents <em class="text-ink"
+          >stand on</em
+        >.
+      </p>
+
+      <div
+        class="mt-9 max-w-xl space-y-4 text-[1.0625rem] leading-relaxed text-ink-2"
+        data-reveal
+        style="--reveal-delay:200ms">
+        {site.intro.map((para) => <p>{para}</p>)}
+      </div>
+
+      <p class="mt-6 text-sm text-ink-3" data-reveal style="--reveal-delay:240ms">
+        {site.subline} · {site.location}
+      </p>
+
+      <div
+        class="mt-10 flex flex-wrap items-center gap-x-7 gap-y-3 text-sm"
+        data-reveal
+        style="--reveal-delay:290ms">
+        <a
+          href="#work"
+          class="group inline-flex items-center gap-2 text-ink underline decoration-rule-2 decoration-1 underline-offset-[5px] transition-colors duration-200 hover:decoration-accent">
+          See the work
+          <Icon
+            name="arrow"
+            class="h-3.5 w-3.5 text-ink-3 transition-transform duration-300 ease-settle group-hover:translate-x-1"
+          />
+        </a>
+        <a
+          href={`mailto:${site.email}`}
+          class="text-ink-2 underline decoration-rule decoration-1 underline-offset-[5px] transition-colors duration-200 hover:text-ink hover:decoration-accent">
+          {site.email}
+        </a>
+      </div>
+    </div>
+
+    {/* Renders nothing at all until public/portrait.jpg exists. */}
+    <div class="max-w-[14rem] lg:pt-4" data-reveal style="--reveal-delay:340ms">
+      <AsciiPortrait
+        src={site.portraitPath}
+        alt={`A portrait of ${site.name}, drawn in text characters`}
+      />
+    </div>
+  </div>
+</section>

@@ -1,0 +1,177 @@
+---
+interface Props {
+  /** Square-ish photo in public/. Nothing renders until this file exists. */
+  src?: string;
+  alt: string;
+  /** Horizontal resolution in characters. Higher reads sharper and costs more. */
+  cols?: number;
+  class?: string;
+}
+const { src = "/portrait.jpg", alt, cols = 96, class: className = "" } = Astro.props;
+---
+
+{/* A real photo, resampled into characters on a canvas. Three reasons over an
+    <img>: it inherits the ink colour so it re-themes with everything else, it
+    sidesteps the "which crop, how big" problem a literal headshot creates on a
+    typographic page, and it's the one genuinely interactive thing here — hover
+    resolves more detail.
+
+    Starts `hidden` and is only revealed once the photo decodes, so the layout is
+    identical whether or not the file exists. No photo, no empty box. */}
+<figure
+  class={`ascii-portrait ${className}`}
+  data-ascii
+  data-ascii-src={src}
+  data-ascii-cols={cols}
+  hidden>
+  <canvas data-ascii-canvas role="img" aria-label={alt} class="block h-auto w-full"></canvas>
+</figure>
+
+<style>
+  .ascii-portrait canvas {
+    /* Crisp edges on the character grid rather than a soft upscale. */
+    image-rendering: -webkit-optimize-contrast;
+  }
+</style>
+
+<script>
+  /** Sparse → dense. ASCII only: anything wider than one cell breaks the grid. */
+  const RAMP = " .`:-=+*ox%#@";
+
+  function setup(fig: HTMLElement) {
+    const canvas = fig.querySelector<HTMLCanvasElement>("[data-ascii-canvas]");
+    const src = fig.dataset.asciiSrc;
+    if (!canvas || !src) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const cols = Number(fig.dataset.asciiCols ?? 96);
+    const img = new Image();
+    let cells: { t: number }[][] | null = null;
+    let rows = 0;
+    let hovering = false;
+
+    /** Sample the photo once into a cols × rows grid of 0–1 luminance. */
+    function sample() {
+      const aspect = img.naturalHeight / img.naturalWidth;
+      /* Monospace cells are about 0.6 as wide as they are tall, so the row count
+         has to be scaled down or the portrait comes out stretched vertically. */
+      rows = Math.max(8, Math.round(cols * aspect * 0.55));
+
+      const off = document.createElement("canvas");
+      off.width = cols;
+      off.height = rows;
+      const octx = off.getContext("2d", { willReadFrequently: true });
+      if (!octx) return false;
+      octx.drawImage(img, 0, 0, cols, rows);
+
+      let data: Uint8ClampedArray;
+      try {
+        data = octx.getImageData(0, 0, cols, rows).data;
+      } catch {
+        /* A cross-origin photo taints the canvas and blocks the read. Local
+           files in public/ never hit this. */
+        return false;
+      }
+
+      cells = [];
+      for (let y = 0; y < rows; y++) {
+        const row: { t: number }[] = [];
+        for (let x = 0; x < cols; x++) {
+          const i = (y * cols + x) * 4;
+          const lum = (0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]) / 255;
+          row.push({ t: lum });
+        }
+        cells.push(row);
+      }
+      return true;
+    }
+
+    function draw() {
+      if (!cells || !ctx || !canvas) return;
+
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const cssWidth = canvas.clientWidth || fig.clientWidth || 320;
+      const cell = cssWidth / cols;
+      const cssHeight = cell * rows * 1.82; // undo the 0.55 row squeeze
+
+      canvas.width = Math.round(cssWidth * dpr);
+      canvas.height = Math.round(cssHeight * dpr);
+      canvas.style.height = `${cssHeight}px`;
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, cssWidth, cssHeight);
+
+      const styles = getComputedStyle(document.documentElement);
+      const ink = styles.getPropertyValue("--color-ink").trim() || "#14161c";
+      const accent = styles.getPropertyValue("--color-accent").trim() || ink;
+      /* On a dark page the characters ARE the light, so dense has to mean bright.
+         Without this flip the portrait renders as its own negative. */
+      const isDark = document.documentElement.dataset.theme === "dark";
+
+      const rowHeight = cssHeight / rows;
+      ctx.font = `${(cell * 1.9).toFixed(2)}px ui-monospace, "SF Mono", Menlo, monospace`;
+      ctx.textBaseline = "middle";
+
+      /* Hover widens the ramp and lifts the gamma — the same photo, resolved
+         further. Cheap, and it's the interaction rather than a decoration. */
+      const gamma = hovering ? 0.78 : 1.0;
+      const depth = hovering ? RAMP.length : RAMP.length - 3;
+
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const lum = cells[y][x].t;
+          const t = Math.pow(isDark ? lum : 1 - lum, gamma);
+          const idx = Math.min(depth - 1, Math.max(0, Math.round(t * (depth - 1))));
+          const ch = RAMP[idx];
+          if (ch === " ") continue;
+          /* The densest few characters take the accent — a little colour landing
+             on the darkest part of the face rather than over the whole thing. */
+          ctx.fillStyle = idx >= depth - 2 ? accent : ink;
+          ctx.fillText(ch, x * cell, y * rowHeight + rowHeight / 2);
+        }
+      }
+    }
+
+    img.decoding = "async";
+    img.onload = () => {
+      if (!sample()) return; // stay hidden rather than show a broken frame
+      fig.hidden = false;
+      draw();
+
+      let raf = 0;
+      const redraw = () => {
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(draw);
+      };
+
+      new ResizeObserver(redraw).observe(fig);
+      new MutationObserver(redraw).observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["data-theme"],
+      });
+
+      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        fig.addEventListener("pointerenter", () => {
+          hovering = true;
+          redraw();
+        });
+        fig.addEventListener("pointerleave", () => {
+          hovering = false;
+          redraw();
+        });
+      }
+    };
+    img.onerror = () => {
+      /* No photo in public/ yet. Leave it hidden; the page is unchanged. */
+    };
+    img.src = src;
+  }
+
+  function initAscii() {
+    document.querySelectorAll<HTMLElement>("[data-ascii]").forEach(setup);
+  }
+
+  document.addEventListener("astro:page-load", initAscii);
+</script>

@@ -1,0 +1,87 @@
+---
+title: "Dashboards from a sentence, in four minutes"
+tagline: "LangGraph + MCP tooling that builds dashboards from a prompt"
+role: "Architect — agent tooling and generation pipeline"
+org: "Amazon Web Services"
+period: "2026"
+order: 2
+featured: true
+stack: ["Python", "LangGraph", "MCP", "Tableau", "Redshift", "SQL"]
+figures:
+  - diagram: "agent-graph"
+    caption: "Generation is a graph, not a prompt chain — so failed validation has a defined place to go instead of a retry loop that burns tokens and gives up."
+metrics:
+  - value: "3 days → 4 min"
+    label: "Average dashboard development time"
+  - value: "15"
+    label: "Features scoped with stakeholders"
+summary: "Reading dashboards was half the problem. I architected the agent tooling that turns a natural-language request into a context-specific dashboard — three days of work down to four minutes."
+links: []
+images: []
+---
+
+{/* REVIEW — this one needs the most from you. Your resume gives the outcome but not
+    the internals, so I wrote the architecture only as far as I could justify and left
+    TODOs rather than inventing. Fill those and this becomes the strongest study here. */}
+
+## Context
+
+Once the knowledge base could describe every existing dashboard, planners asked the inverse:
+*can it just build me the one I need?*
+
+The manual path took about three days — not because the work was hard, but because it was
+serial. Find someone who knows the domain, agree on definitions, locate the right tables,
+build it, discover the definitions were subtly wrong, iterate.
+
+## The problem
+
+A dashboard request is underspecified by nature. "Power utilization by site for last quarter"
+omits which utilization definition is meant, which tables are authoritative, and what the
+reader will decide from it.
+
+So this couldn't be text-to-SQL. It needed **grounded context** — real metric definitions,
+real table lineage, real precedent from dashboards that already existed — and the ability to
+take dependent steps, checking its work between them.
+
+## What I built
+
+**MCP servers as the tool boundary.** Each capability — search the knowledge base, resolve a
+metric, inspect a schema, validate a query, emit a spec — is an MCP tool with an explicit
+contract. That keeps them reusable across the platform's agents instead of welded to one
+prompt, and independently testable.
+
+**LangGraph for control flow.** Generation branches: resolve intent, gather context, draft,
+validate, repair, emit. A graph makes those states explicit — and the failure paths too.
+
+**Grounding in the knowledge base from the first project**, so a new dashboard inherits the
+existing estate's definitions instead of inventing its own.
+
+{/* TODO: fill in the specifics only you know —
+    - What validation actually checks before a spec is accepted
+    - Whether output is a Tableau spec, a published workbook, or a draft for review
+    - How "4 minutes" was measured (wall clock? median? over how many requests?)
+    - What the human still does in the loop */}
+
+To decide what to build I analyzed legacy dashboard usage in Redshift and worked the findings
+through with planning, infra and BI stakeholders — **15 high-value features** with named
+owners, which is why the tooling targeted the requests people actually made.
+
+## The hard part
+
+**Making retrieved context earn its place.** Everything in the prompt costs tokens and
+attention, and adding more context hurt about as often as it helped. The generator improved
+when retrieval got *narrower*, not bigger.
+
+{/* TODO: confirm or replace — was context scope really your main tuning axis, or was it
+    graph structure or tool granularity? */}
+
+## Outcome
+
+Three days to four minutes. The more interesting effect was on demand: when a view costs
+minutes instead of days, people ask questions they wouldn't have bothered to ask.
+
+## What I'd do differently
+
+Version the generated specs from the start and treat output as a draft with provenance. The
+first questions people asked were "what changed?" and "why that table?" — both far easier to
+answer if you designed for them up front.

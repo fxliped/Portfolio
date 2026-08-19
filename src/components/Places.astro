@@ -1,0 +1,59 @@
+---
+import { experience } from "../data/site";
+
+/**
+ * "Where I've worked" strip. Deduped by organization — AWS appears twice in the
+ * timeline, but once here — with the years merged.
+ *
+ * Renders a logo when one exists in public/logos/, otherwise the organization
+ * name set in the display serif. The fallback is the design, not a broken state,
+ * so this works before any logo files are added.
+ */
+const places: { company: string; years: string[]; locations: string[]; logo?: string }[] = [];
+
+for (const job of experience) {
+  const existing = places.find((p) => p.company === job.company);
+  if (existing) {
+    existing.years.push(job.years);
+    if (!existing.locations.includes(job.location)) existing.locations.push(job.location);
+    existing.logo ??= job.logo;
+  } else {
+    places.push({
+      company: job.company,
+      years: [job.years],
+      locations: [job.location],
+      logo: job.logo,
+    });
+  }
+}
+---
+
+<ul class="grid grid-cols-1 gap-x-8 gap-y-8 sm:grid-cols-3">
+  {
+    places.map((p, i) => (
+      <li
+        class="flex flex-col justify-between gap-4"
+        data-reveal
+        style={`--reveal-delay:${i * 80}ms`}>
+        <div class="flex h-9 items-center">
+          {p.logo ? (
+            <img
+              src={p.logo}
+              alt={p.company}
+              height="28"
+              class="h-7 w-auto opacity-80"
+              loading="lazy"
+              decoding="async"
+            />
+          ) : (
+            <span class="display text-[1.375rem] leading-none text-ink">{p.company}</span>
+          )}
+        </div>
+        <div class="border-t border-rule pt-3">
+          <p class="text-[0.8125rem] text-ink-2">{p.locations.join(" · ")}</p>
+          <p class="mt-0.5 text-[0.8125rem] text-ink-3">{p.years.reverse().join(" · ")}</p>
+        </div>
+      </li>
+    ))
+  }
+</ul>

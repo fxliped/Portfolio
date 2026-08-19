@@ -1,0 +1,75 @@
+---
+/**
+ * BIRD task completion: this agent against GPT-4o on the same tasks.
+ * Percent maps linearly to x, 0% at 180 and 100% at 660 — 4.8px per point.
+ */
+const SCALE = (pct: number) => 180 + pct * 4.8;
+const ROWS = [
+  { label: "This agent", pct: 71, accent: true },
+  { label: "GPT-4o", pct: 63, accent: false },
+];
+const TICKS = [0, 25, 50, 75, 100];
+---
+
+<svg class="dgm" viewBox="0 0 720 178" role="img" aria-labelledby="dgm-bench-title">
+  <title id="dgm-bench-title">
+    A bar chart of task completion on the BIRD benchmark. This agent completes 71 percent of
+    tasks; GPT-4o completes 63 percent on the same tasks — a gap of eight percentage points.
+  </title>
+
+  <text class="dgm-label" x="8" y="16">task completion · bird benchmark</text>
+
+  <!-- Gridlines -->
+  <g class="dgm-line" style="stroke-dasharray:2 4">
+    {TICKS.map((t) => <path d={`M${SCALE(t)} 36 V128`} />)}
+  </g>
+  <g>
+    {
+      TICKS.map((t) => (
+        <text class="dgm-sub" x={SCALE(t)} y="144" text-anchor="middle">
+          {t}%
+        </text>
+      ))
+    }
+  </g>
+
+  <!-- Bars -->
+  {
+    ROWS.map((r, i) => {
+      const y = 56 + i * 42;
+      return (
+        <g>
+          <text class="dgm-title" x="8" y={y + 17}>
+            {r.label}
+          </text>
+          <rect
+            x="180"
+            y={y}
+            width={SCALE(r.pct) - 180}
+            height="26"
+            fill="var(--color-accent)"
+            fill-opacity={r.accent ? 0.85 : 0.28}
+            stroke="none"
+          />
+          <text
+            class="dgm-title"
+            x={SCALE(r.pct) + 10}
+            y={y + 17}
+            style={r.accent ? "fill:var(--color-accent)" : ""}>
+            {r.pct}%
+          </text>
+        </g>
+      );
+    })
+  }
+
+  {/* Gap annotation sits entirely above the bars. Bracketing it from bar end to
+      bar end would draw a vertical straight through the filled top bar. */}
+  <path class="dgm-line-accent" d={`M${SCALE(63)} 42 V32 H${SCALE(71)} V42`}></path>
+  <text class="dgm-sub" x={SCALE(67)} y="26" text-anchor="middle" style="fill:var(--color-accent)">
+    +8 pts
+  </text>
+
+  <path class="dgm-line" d="M180 128 H660"></path>
+  <text class="dgm-mono" x="8" y="170">same tasks · same schemas · n = 400+ sessions</text>
+</svg>

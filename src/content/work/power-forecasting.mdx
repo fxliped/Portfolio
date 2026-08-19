@@ -1,0 +1,81 @@
+---
+title: "Forecasting data center power to 1.9% error"
+tagline: "Ensemble model on 500M+ daily telemetry events"
+role: "Business intelligence engineer — modeling and pipelines"
+org: "Amazon Web Services"
+period: "Jun 2025 — Sep 2025"
+order: 4
+featured: true
+stack: ["Python", "dbt", "Amazon Redshift", "scikit-learn", "Tableau", "SQL"]
+figures:
+  - diagram: "forecast"
+    caption: "Cutting the error band to under a third of baseline made per-AZ under-usage visible — it had been inside the noise before."
+metrics:
+  - value: "1.9%"
+    label: "Forecast MAE, against a 6.3% baseline"
+  - value: "$400K"
+    label: "Cost-saving initiative informed"
+  - value: "500M+"
+    label: "Daily telemetry events processed"
+  - value: "6h → 30min"
+    label: "Weekly reporting time"
+summary: "Planners were forecasting data center power off a 6.3%-error baseline and assembling reports by hand. I built the ensemble model that cut error to 1.9%, plus the pipelines feeding it."
+links: []
+images: []
+---
+
+{/* REVIEW: all figures from your resume. Why the ensemble beat the baseline is my
+    inference — correct it to what actually drove the gain. */}
+
+## Context
+
+Data center power utilization is a forecasting problem with money attached in both directions.
+Over-provision and you strand capital; under-provision and you constrain the business. The
+existing forecast carried **6.3% mean absolute error** — wide enough that planners padded
+their decisions to absorb it.
+
+The data underneath was fine: 500M+ hardware telemetry events a day. Getting it into a shape
+anyone could plan against took six hours of manual assembly every week.
+
+## The problem
+
+Three gaps, and the modeling one wasn't the most valuable to close first.
+
+- **The forecast was too coarse** to plan a single availability zone against.
+- **The data path was manual**, so the forecast was only as fresh as someone's Wednesday.
+- **Deviations were caught by eye** — S3 Glacier demand anomalies were monitored in Excel,
+  which means they were found when someone happened to look.
+
+## What I built
+
+**ELT pipelines in dbt and Redshift.** 500M+ daily events modeled into BI-ready structures.
+dbt mattered less for the transformations than for making them *reviewable* — the definitions
+stopped living in one analyst's saved queries. Weekly reporting went from six hours to thirty
+minutes.
+
+**An ensemble forecasting model.** Utilization has several regimes at once: steady baseline
+draw, seasonal shape, and step changes from deployments. Single models compromised across all
+three; an ensemble let components carry what each was good at. That's where most of the
+**6.3% → 1.9%** improvement came from.
+
+Applied per availability zone, the tighter forecast surfaced sustained under-usage that had
+been invisible inside the wider error band — informing a **$400K initiative across 12 AZs**.
+
+**Statistical anomaly detection** on global S3 Glacier demand, replacing the Excel workflow
+and catching **14 anomalies a month** before they affected capacity.
+
+## The hard part
+
+**Beating the baseline honestly.** It's easy to post a better error number by evaluating on a
+window that flatters the model. A defensible 1.9% meant being strict about holdout periods
+that *included* the step changes — the regimes where 6.3% was actually costing decisions.
+
+**False-positive rate decides whether anomaly detection survives.** A detector that pages
+someone weekly gets ignored within a month, and then it's worse than the spreadsheet it
+replaced. Tuning for actionable alerts rather than sensitivity was most of that work.
+
+## What I'd do differently
+
+Ship the pipeline before the model. The forecast got the attention because it was the
+interesting problem, but six-hours-to-thirty-minutes is what planners felt week to week — and
+it was the prerequisite for the model being usable at all.

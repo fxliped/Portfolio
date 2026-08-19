@@ -1,0 +1,428 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Design tokens.
+
+   Light is the default. Dark flips the same custom properties on
+   html[data-theme="dark"] — Tailwind 4 utilities compile to var() references,
+   so overriding the variable re-themes every utility with no extra classes.
+   The selector is html[data-theme=…] rather than [data-theme=…] so it always
+   outranks the :root block Tailwind emits from @theme.
+--------------------------------------------------------------------------- */
+@theme {
+  /* Warm paper, faintly blue-cast ink — not neutral grey. */
+  --color-paper: #faf9f6;
+  --color-paper-2: #f2f0ea;
+  --color-paper-3: #eae7e0;
+  --color-ink: #14161c;
+  --color-ink-2: #4c515d;
+  --color-ink-3: #8b909b;
+  --color-rule: #ddd9d1;
+  --color-rule-2: #c7c2b8;
+
+  /* Three accents, in priority order: blue carries links and interactive state
+     everywhere, orange and purple only distinguish one panel from the next.
+     All three clear WCAG AA (4.5:1) as small text on both --color-paper and
+     --color-paper-2, in both themes — measured, not eyeballed. Nothing is
+     coloured for decoration; a colour always marks a boundary. */
+  --color-accent: #2b5f96;
+  --color-accent-2: #a8500f;
+  --color-accent-3: #6b4a9e;
+
+  --font-display: "Newsreader Variable", Georgia, "Times New Roman", serif;
+  --font-sans: "DM Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Reveal easing — a long, decelerating settle rather than a snap. */
+  --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html[data-theme="dark"] {
+  --color-paper: #0e1014;
+  --color-paper-2: #16191f;
+  --color-paper-3: #1d212a;
+  --color-ink: #eceef2;
+  --color-ink-2: #a9afbb;
+  --color-ink-3: #6f7683;
+  --color-rule: #23272f;
+  --color-rule-2: #343a45;
+  --color-accent: #8fb6e0;
+  --color-accent-2: #e79a5c;
+  --color-accent-3: #b49ae8;
+}
+
+/* ---- Local accent -------------------------------------------------------
+   Re-point --color-accent for one subtree. Every Tailwind `*-accent` utility
+   inside compiles to var(--color-accent), and so do the inline diagram SVGs
+   (.dgm-dot, .dgm-line-accent) — so one class re-tints a whole panel, its
+   heading, its hover state and its drawing together. Both themes are declared
+   here because an inline style attribute can't be theme-conditional. */
+.accent-blue {
+  --color-accent: #2b5f96;
+}
+.accent-orange {
+  --color-accent: #a8500f;
+}
+.accent-purple {
+  --color-accent: #6b4a9e;
+}
+
+html[data-theme="dark"] .accent-blue {
+  --color-accent: #8fb6e0;
+}
+html[data-theme="dark"] .accent-orange {
+  --color-accent: #e79a5c;
+}
+html[data-theme="dark"] .accent-purple {
+  --color-accent: #b49ae8;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    color-scheme: light;
+  }
+
+  html[data-theme="dark"] {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    /* Theme swap shouldn't strobe. */
+    transition:
+      background-color 400ms ease,
+      color 400ms ease;
+  }
+
+  ::selection {
+    background-color: color-mix(in oklab, var(--color-accent) 22%, transparent);
+  }
+
+  :focus-visible {
+    outline: 1.5px solid var(--color-accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+}
+
+/* ---- Display type -------------------------------------------------------
+   Newsreader at a light weight with tight tracking. The italic is the one
+   piece of ornament the design allows itself — used for a single phrase in a
+   heading, never for a whole line. */
+.display {
+  font-family: var(--font-display);
+  font-weight: 350;
+  letter-spacing: -0.022em;
+  line-height: 1.06;
+  text-wrap: balance;
+}
+
+.display em,
+.display i {
+  font-style: italic;
+  font-weight: 300;
+}
+
+/* Wide-tracked micro-label. Replaces the monospace eyebrow. */
+.label {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-ink-3);
+}
+
+/* Figures: tabular so columns line up, serif so they read as display type. */
+.num {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.015em;
+}
+
+.chip {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.01em;
+  color: var(--color-ink-2);
+  border: 1px solid var(--color-rule);
+  border-radius: 4px;
+  padding: 0.2rem 0.45rem;
+  white-space: nowrap;
+}
+
+.rule {
+  height: 1px;
+  background-color: var(--color-rule);
+}
+
+/* Theme-toggle glyphs. These must live here, not in a component <style> block:
+   the SVGs are rendered by Icon.astro, so a scoped rule in Nav.astro never
+   matches them and both themes end up showing the same icon. Each button shows
+   the theme you'd switch TO, matching its aria-label. */
+html[data-theme="dark"] .theme-moon {
+  display: none;
+}
+
+html[data-theme="dark"] .theme-sun {
+  display: block;
+}
+
+/* ---- Diagrams -----------------------------------------------------------
+   Inline SVG inherits these custom properties, so the technical diagrams
+   re-theme with everything else instead of needing a second dark-mode asset. */
+.dgm {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.dgm-box {
+  fill: var(--color-paper-2);
+  stroke: var(--color-rule);
+  stroke-width: 1;
+}
+
+.dgm-line {
+  fill: none;
+  stroke: var(--color-rule-2);
+  stroke-width: 1;
+}
+
+.dgm-line-accent {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 1.25;
+}
+
+.dgm-dot {
+  fill: var(--color-accent);
+}
+
+.dgm-title {
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 500;
+  fill: var(--color-ink);
+}
+
+.dgm-sub {
+  font-family: var(--font-sans);
+  font-size: 9.5px;
+  fill: var(--color-ink-3);
+}
+
+.dgm-label {
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  fill: var(--color-ink-3);
+}
+
+.dgm-mono {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  fill: var(--color-ink-2);
+}
+
+/* Figure number in a caption. Monospace and set apart, so figures can be
+   cross-referenced from the prose the way a paper would. */
+.fig-num {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-accent);
+  margin-right: 0.5rem;
+}
+
+.fig-num::after {
+  content: "—";
+  color: var(--color-ink-3);
+  margin-left: 0.5rem;
+}
+
+/* ---- Scroll reveal ------------------------------------------------------
+   Slower and gentler than a typical fade-up: 650ms on a decelerating curve,
+   staggered by --reveal-delay. Plain attribute rather than a component so MDX
+   output can opt in too. */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(12px);
+  transition:
+    opacity 650ms var(--ease-settle) var(--reveal-delay, 0ms),
+    transform 650ms var(--ease-settle) var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+[data-reveal].is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---- Case-study prose --------------------------------------------------- */
+.prose {
+  color: var(--color-ink-2);
+  font-size: 1.0625rem;
+  line-height: 1.72;
+}
+
+.prose > * + * {
+  margin-top: 1.2em;
+}
+
+.prose > :first-child {
+  margin-top: 0;
+}
+
+.prose h2 {
+  margin-top: 2.6em;
+  margin-bottom: 0.2em;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.6rem;
+  letter-spacing: -0.018em;
+  line-height: 1.2;
+  color: var(--color-ink);
+}
+
+.prose h3 {
+  margin-top: 2em;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.prose strong {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.prose a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in oklab, var(--color-accent) 35%, transparent);
+  transition: text-decoration-color 160ms;
+}
+
+.prose a:hover {
+  text-decoration-color: var(--color-accent);
+}
+
+.prose ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.prose ul > li {
+  position: relative;
+  padding-left: 1.15rem;
+}
+
+.prose ul > li + li,
+.prose ol > li + li {
+  margin-top: 0.55em;
+}
+
+.prose ul > li::before {
+  content: "";
+  position: absolute;
+  left: 0.05rem;
+  top: 0.78em;
+  width: 0.5rem;
+  height: 1px;
+  background-color: var(--color-rule-2);
+}
+
+.prose ol {
+  list-style: decimal;
+  padding-left: 1.2rem;
+}
+
+.prose ol::marker {
+  color: var(--color-ink-3);
+}
+
+.prose blockquote {
+  border-left: 1px solid var(--color-rule-2);
+  padding-left: 1.15rem;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-style: italic;
+  color: var(--color-ink);
+}
+
+.prose code {
+  background-color: var(--color-paper-2);
+  border: 1px solid var(--color-rule);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  color: var(--color-ink);
+}
+
+.prose pre {
+  background-color: var(--color-paper-2) !important;
+  border: 1px solid var(--color-rule);
+  border-radius: 8px;
+  padding: 0.95rem 1.1rem;
+  overflow-x: auto;
+  font-size: 0.8125rem;
+  line-height: 1.7;
+}
+
+.prose pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+.prose hr {
+  border-color: var(--color-rule);
+  margin-top: 2.4em;
+  margin-bottom: 2.4em;
+}
+
+/* Shiki ships light and dark token colours; swap which one applies. */
+html[data-theme="dark"] .astro-code,
+html[data-theme="dark"] .astro-code span {
+  color: var(--shiki-dark, inherit) !important;
+}
+
+/* ---- Motion opt-out ---------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+  }
+}

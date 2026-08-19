@@ -1,0 +1,78 @@
+---
+import { site } from "../data/site";
+import Icon from "./Icon.astro";
+
+const links = [
+  { label: "Work", href: "/#work" },
+  { label: "Experience", href: "/#experience" },
+  { label: "Lab", href: "/#lab" },
+  { label: "Toolkit", href: "/#skills" },
+  { label: "Contact", href: "/#contact" },
+];
+---
+
+<header id="site-nav" class="fixed inset-x-0 top-0 z-50 transition-colors duration-300">
+  <nav
+    class="mx-auto flex h-[4.5rem] max-w-5xl items-center justify-between gap-6 px-6 sm:px-10"
+    aria-label="Primary">
+    <a href="/" class="display text-lg text-ink transition-opacity duration-200 hover:opacity-65">
+      {site.name}
+    </a>
+
+    <div class="flex items-center gap-1 sm:gap-2">
+      <ul class="hidden items-center md:flex">
+        {
+          links.map((l) => (
+            <li>
+              <a
+                href={l.href}
+                class="px-3 py-2 text-sm text-ink-2 transition-colors duration-200 hover:text-ink">
+                {l.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+
+      <a
+        href={site.resumePath}
+        target="_blank"
+        class="px-3 py-2 text-sm text-ink-2 underline decoration-rule-2 decoration-1 underline-offset-4 transition-colors duration-200 hover:text-ink hover:decoration-accent">
+        Résumé
+      </a>
+
+      <button
+        type="button"
+        data-theme-toggle
+        class="ml-1 grid h-9 w-9 place-items-center rounded-full border border-rule text-ink-2 transition-colors duration-200 hover:border-rule-2 hover:text-ink"
+        aria-label="Toggle theme"
+        aria-pressed="false">
+        {/* Both glyphs render; the theme-moon/theme-sun rules in global.css show
+            the one for the theme you'd switch TO. Light → moon, dark → sun. */}
+        <Icon name="moon" class="theme-moon h-[15px] w-[15px]" />
+        <Icon name="sun" class="theme-sun hidden h-[15px] w-[15px]" />
+      </button>
+    </div>
+  </nav>
+  <div class="rule opacity-0 transition-opacity duration-300" data-nav-rule></div>
+</header>
+
+<script>
+  function initNav() {
+    const nav = document.getElementById("site-nav");
+    if (!nav) return;
+    const rule = nav.querySelector<HTMLElement>("[data-nav-rule]");
+
+    const onScroll = () => {
+      const past = window.scrollY > 8;
+      nav.classList.toggle("bg-paper/80", past);
+      nav.classList.toggle("backdrop-blur-md", past);
+      if (rule) rule.style.opacity = past ? "1" : "0";
+    };
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+  }
+
+  document.addEventListener("astro:page-load", initNav);
+</script>

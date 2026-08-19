@@ -1,0 +1,13 @@
+node_modules/
+dist/
+
+# Private working notes. The repo is public, and this file discusses which parts
+# of the case studies still need review — keep it local.
+CONTENT.md
+.astro/
+.DS_Store
+*.log
+.env
+.env.production
+.vercel
+.wrangler

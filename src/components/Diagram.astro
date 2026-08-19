@@ -1,0 +1,56 @@
+---
+import Pipeline from "./diagrams/Pipeline.astro";
+import AgentGraph from "./diagrams/AgentGraph.astro";
+import EventSourcing from "./diagrams/EventSourcing.astro";
+import Forecast from "./diagrams/Forecast.astro";
+import Benchmark from "./diagrams/Benchmark.astro";
+import EvalMatrix from "./diagrams/EvalMatrix.astro";
+
+interface Props {
+  /** Key from the case-study frontmatter. Unknown keys render nothing. */
+  name: string;
+  caption?: string;
+  /** Figure number. Omit on the home page, where there's nothing to cross-reference. */
+  fig?: number;
+  /** Drop the frame, padding and caption — for thumbnails inside a work panel. */
+  bare?: boolean;
+  class?: string;
+}
+
+const { name, caption, fig, bare = false, class: className = "" } = Astro.props;
+
+const DIAGRAMS = {
+  pipeline: Pipeline,
+  "agent-graph": AgentGraph,
+  "event-sourcing": EventSourcing,
+  forecast: Forecast,
+  benchmark: Benchmark,
+  "eval-matrix": EvalMatrix,
+} as const;
+
+const Chosen = DIAGRAMS[name as keyof typeof DIAGRAMS];
+---
+
+{
+  Chosen && bare && (
+    <div class={className} aria-hidden="true">
+      <Chosen />
+    </div>
+  )
+}
+
+{
+  Chosen && !bare && (
+    <figure class={className} data-reveal>
+      <div class="rounded-md border border-rule bg-paper-2/40 px-4 py-6 sm:px-8 sm:py-9">
+        <Chosen />
+      </div>
+      {caption && (
+        <figcaption class="mt-3 text-[0.8125rem] leading-relaxed text-ink-3">
+          {fig && <span class="fig-num">Fig. {fig}</span>}
+          {caption}
+        </figcaption>
+      )}
+    </figure>
+  )
+}

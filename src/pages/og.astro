@@ -1,0 +1,49 @@
+---
+/**
+ * Source for public/og.png — the picture that shows when the link is pasted into
+ * LinkedIn, Slack, or iMessage. Exactly 1200×630, which is what every platform
+ * crops to.
+ *
+ * Regenerate after changing it (dev server running):
+ *   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+ *     --headless --disable-gpu --window-size=1200,630 --hide-scrollbars \
+ *     --screenshot=public/og.png --virtual-time-budget=3000 \
+ *     http://localhost:4321/og
+ *
+ * Not linked from anywhere and harmless to ship, but it will appear in the
+ * sitemap — add "og" to a sitemap filter if that ever matters.
+ */
+import "@fontsource-variable/dm-sans";
+import "@fontsource-variable/newsreader";
+import "@fontsource-variable/newsreader/wght-italic.css";
+import "../styles/global.css";
+import { site } from "../data/site";
+---
+
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <title>OG card</title>
+    <meta name="robots" content="noindex" />
+  </head>
+  <body class="bg-paper">
+    <div class="relative flex h-[630px] w-[1200px] flex-col justify-center overflow-hidden p-20">
+      {/* All three accents, stated once. */}
+      <div class="absolute inset-x-0 top-0 flex h-2">
+        <div class="flex-1 bg-accent"></div>
+        <div class="flex-1 bg-accent-2"></div>
+        <div class="flex-1 bg-accent-3"></div>
+      </div>
+
+      <p class="label !text-[0.9375rem] !tracking-[0.24em]">{site.role}</p>
+      <h1 class="display mt-7 text-[6rem] leading-none text-ink">{site.name}</h1>
+      <p class="display mt-9 max-w-[44rem] text-[2.5rem] leading-tight text-ink-2">
+        I build the <em class="text-ink">retrieval layer</em> that AI agents <em class="text-ink"
+          >stand on</em
+        >.
+      </p>
+      <p class="mt-12 text-[1.25rem] text-ink-3">{site.subline} · {site.location}</p>
+    </div>
+  </body>
+</html>

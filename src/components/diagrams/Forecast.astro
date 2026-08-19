@@ -1,0 +1,78 @@
+---
+/** Error band narrowing from a 6.3% baseline to a 1.9% ensemble forecast. */
+---
+
+<svg class="dgm" viewBox="0 0 720 244" role="img" aria-labelledby="dgm-forecast-title">
+  <title id="dgm-forecast-title">
+    Hardware telemetry flows through dbt into Redshift and feeds a forecast. The baseline's
+    error band of plus or minus 6.3 percent is roughly three times the width of the ensemble
+    model's 1.9 percent band around the same actual utilization curve.
+  </title>
+
+  <!-- Source flow -->
+  <g>
+    <rect class="dgm-box" x="8" y="52" width="128" height="40" rx="3"></rect>
+    <text class="dgm-title" x="72" y="70" text-anchor="middle">500M+ / day</text>
+    <text class="dgm-sub" x="72" y="84" text-anchor="middle">hardware telemetry</text>
+  </g>
+  <g>
+    <rect class="dgm-box" x="8" y="110" width="128" height="32" rx="3"></rect>
+    <text class="dgm-mono" x="72" y="130" text-anchor="middle">dbt → Redshift</text>
+  </g>
+  <g class="dgm-line">
+    <path d="M72 92 V106"></path>
+    <path d="M68 100 l4 6 4 -6"></path>
+    <path d="M136 126 H190"></path>
+    <path d="M184 122 l6 4 -6 4"></path>
+  </g>
+
+  <!-- Axes -->
+  <path class="dgm-line" d="M200 28 V184 H668"></path>
+  <text class="dgm-label" x="200" y="18">power utilization</text>
+
+  <!-- Baseline error band: ±6.3% -->
+  <polygon
+    points="200,114 250,94 300,102 350,74 400,82 450,52 500,66 550,40 600,48 660,32 660,84 600,100 550,92 500,118 450,104 400,134 350,126 300,154 250,146 200,166"
+    fill="var(--color-rule-2)"
+    fill-opacity="0.28"
+    stroke="none"></polygon>
+
+  <!-- Ensemble error band: ±1.9% -->
+  <polygon
+    points="200,132 250,112 300,120 350,92 400,100 450,70 500,84 550,58 600,66 660,50 660,66 600,82 550,74 500,100 450,86 400,116 350,108 300,136 250,128 200,148"
+    fill="var(--color-accent)"
+    fill-opacity="0.3"
+    stroke="none"></polygon>
+
+  <!-- Actual -->
+  <polyline
+    class="dgm-line-accent"
+    points="200,140 250,120 300,128 350,100 400,108 450,78 500,92 550,66 600,74 660,58"></polyline>
+
+  <!-- Legend -->
+  <g>
+    <rect
+      x="200"
+      y="206"
+      width="18"
+      height="9"
+      fill="var(--color-rule-2)"
+      fill-opacity="0.28"
+      stroke="none"></rect>
+    <text class="dgm-sub" x="226" y="214">baseline ±6.3% MAE</text>
+
+    <rect
+      x="376"
+      y="206"
+      width="18"
+      height="9"
+      fill="var(--color-accent)"
+      fill-opacity="0.3"
+      stroke="none"></rect>
+    <text class="dgm-sub" x="402" y="214">ensemble ±1.9% MAE</text>
+
+    <text class="dgm-sub" x="556" y="214" style="fill:var(--color-accent)">
+      → $400K across 12 AZs
+    </text>
+  </g>
+</svg>

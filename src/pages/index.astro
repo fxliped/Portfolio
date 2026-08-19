@@ -1,0 +1,83 @@
+---
+import { getCollection } from "astro:content";
+import Base from "../layouts/Base.astro";
+import Hero from "../components/Hero.astro";
+import SectionHeading from "../components/SectionHeading.astro";
+import WorkCard from "../components/WorkCard.astro";
+import Experience from "../components/Experience.astro";
+import Places from "../components/Places.astro";
+import Skills from "../components/Skills.astro";
+import Lab from "../components/Lab.astro";
+import Contact from "../components/Contact.astro";
+
+const work = (await getCollection("work", ({ data }) => data.featured)).sort(
+  (a, b) => a.data.order - b.data.order,
+);
+---
+
+<Base>
+  <Hero />
+
+  {/* The panels carry the visuals now, so there's no standalone diagram above
+      them — and no duplicate SVG title id on the page. */}
+  <section class="mx-auto max-w-5xl scroll-mt-24 px-6 pt-28 sm:px-10 sm:pt-32" id="work">
+    <SectionHeading
+      eyebrow="Work"
+      title="Things I've built"
+      lede="A few projects, each with the full story behind it — what broke, what I built, what I'd change."
+      accent="accent-blue"
+    />
+    <div class="grid gap-5 sm:grid-cols-2">
+      {
+        work.map((entry, i) => (
+          <WorkCard
+            index={i + 1}
+            href={`/work/${entry.id}`}
+            title={entry.data.title}
+            tagline={entry.data.tagline}
+            org={entry.data.org}
+            period={entry.data.period}
+            diagram={entry.data.figures[0]?.diagram}
+            stack={entry.data.stack}
+            metrics={entry.data.metrics}
+            delay={i * 70}
+          />
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-5xl scroll-mt-24 px-6 pt-32 sm:px-10" id="experience">
+    <SectionHeading eyebrow="Experience" title="Where I've worked" accent="accent-purple" />
+    <Places />
+    <div class="mt-20">
+      <Experience />
+    </div>
+  </section>
+
+  {/* Late on the page on purpose: the work above is the case for hiring me, and
+      this is the code someone can actually open to check it. */}
+  <section class="mx-auto max-w-5xl scroll-mt-24 px-6 pt-32 sm:px-10" id="lab">
+    <SectionHeading
+      eyebrow="Lab"
+      title="Code you can read"
+      lede="The work above is internal, so none of it is open. These are smaller things I built on my own time, and the repos are public."
+      accent="accent-orange"
+    />
+    <Lab />
+  </section>
+
+  <section class="mx-auto max-w-5xl scroll-mt-24 px-6 pt-32 sm:px-10" id="skills">
+    <SectionHeading
+      eyebrow="Toolkit"
+      title="What I reach for"
+      lede="Things I've actually shipped with, not everything I've ever opened."
+      accent="accent-blue"
+    />
+    <Skills />
+  </section>
+
+  <section class="mx-auto max-w-5xl scroll-mt-24 px-6 pt-32 sm:px-10" id="contact">
+    <Contact />
+  </section>
+</Base>
