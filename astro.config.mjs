@@ -6,7 +6,7 @@ import tailwindcss from "@tailwindcss/vite";
 // Drives sitemap + canonical + OG URLs. Cloudflare Pages gives you
 // <project>.pages.dev on first deploy — set this to whatever it assigns.
 // TODO: replace with your custom domain later; nothing else needs to change.
-const SITE = "https://felipe-portfolio.pages.dev";
+const SITE = "https://felipe-duenas.pages.dev";
 
 export default defineConfig({
   site: SITE,
