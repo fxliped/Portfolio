@@ -170,10 +170,10 @@ export const experience: Role[] = [
     location: "Arlington, VA",
     current: false,
     bullets: [
-      "Forecast data center power well enough to see what the old error band hid: 1.9% MAE against a 6.3% baseline, which surfaced the under-usage behind a $400K savings initiative across 12 availability zones.",
-      "Also did the plumbing: 500M+ daily telemetry events through dbt and Redshift, and a weekly report that took six hours now takes thirty minutes.",
+      "Planners at government sites were coordinating builds around power numbers padded by buffers on top of buffers. An XGBoost and Random Forest ensemble, forecasting from historical draw and peak events, cut that error from a 6.3% baseline to 1.9%: tight enough to recalculate the planned values and fit more racks into the same footprint, with 99.9999% uptime held.",
+      "Built the ELT pipelines for 500M+ daily telemetry events through dbt and Redshift, then one planning dashboard in place of the seven sources my team was reading by hand, and automated S3 Glacier demand tracking off a manual spreadsheet. Weekly reporting went from six hours to thirty minutes.",
     ],
-    stack: ["Python", "dbt", "Redshift", "Tableau", "scikit-learn", "SQL"],
+    stack: ["Python", "XGBoost", "dbt", "Redshift", "Tableau", "scikit-learn", "SQL"],
   },
   {
     company: "Acer",
@@ -186,9 +186,9 @@ export const experience: Role[] = [
     current: false,
     bullets: [
       "Twenty years of records scattered across Oracle, SharePoint, and spreadsheets, pulled into one model that cut cross-team query time by 35%.",
-      "Reconciling 12,000+ IT assets turned up a $22K licensing discrepancy nobody had noticed. It was fixed within one billing cycle.",
+      "Automated 3 manual monthly reporting processes into Tableau dashboards for General Counsel, reducing average report prep time from 2 hours to 20 minutes",
     ],
-    stack: ["SQL", "Oracle DB", "Tableau", "Excel", "SharePoint"],
+    stack: ["SQL", "Tableau", "Oracle DB", "Excel", "Microsoft Office"],
   },
 ];
 
@@ -294,7 +294,7 @@ export const lab: LabProject[] = [
   {
     title: "Asset Edge",
     blurb:
-      "A financial research application I built to serve real-time stock information, news, and forecasted insights derived from an LSTM neural network I implemented. Architected a Generative AI assistant supported by a RAG system for SEC filings and news articles, FinBERT for sentiment analysis, and FastAPI behind a React front end.",
+      "A financial research application to serve real-time stock information, news, and forecasted insights derived from an LSTM neural network I implemented. Architected a Generative AI assistant supported by a RAG system for SEC filings and news articles, FinBERT for sentiment analysis, and FastAPI behind a React front end.",
     lane: "Applied AI · full stack",
     tags: ["FastAPI", "React", "LangChain", "ChromaDB", "PyTorch"],
     repo: "https://github.com/fxliped/GenAI-Finance-Engine",
