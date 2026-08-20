@@ -1,12 +1,16 @@
 ---
 import { site } from "../data/site";
 import Icon from "./Icon.astro";
-import AsciiPortrait from "./AsciiPortrait.astro";
+import Portrait from "./Portrait.astro";
 ---
 
 {/* Trimmed to what a first screen should carry: who, what, and one way in.
     The old version also had a subline, a "Currently" block and four stat tiles —
-    the numbers now live on the work panels, where they have context. */}
+    the numbers now live on the work panels, where they have context.
+
+    The portrait here is the digit mosaic; the contact block at the foot of the page
+    carries the same photo plain. The right column also sets the text measure —
+    without it the headline would run the full 5xl. */}
 <section class="mx-auto max-w-5xl px-6 pt-36 sm:px-10 sm:pt-44">
   <div class="grid items-start gap-14 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-16">
     <div>
@@ -62,19 +66,12 @@ import AsciiPortrait from "./AsciiPortrait.astro";
       </div>
     </div>
 
-    {/* Renders nothing at all until public/portrait.jpg exists. */}
+    {/* An 88x88 file blown up to ~350px. `image-rendering: pixelated` makes the
+        browser upscale it nearest-neighbour, so every block has a hard edge and
+        there's no blur at all. No canvas and no JavaScript — the pixelation is
+        baked into the file. See site.portraitPixelPath for how to regenerate it. */}
     <div class="max-w-[22rem] lg:pt-4" data-reveal style="--reveal-delay:340ms">
-      {/* Measured off the photo rather than guessed: hair starts at 30% down the
-          frame, chin at 66%, shoulders at 75%. This crops the headroom off the top
-          and stops just past the shoulders. Re-measure if the photo is replaced. */}
-      <AsciiPortrait
-        src={site.portraitPath}
-        alt={`A portrait of ${site.name}, drawn in text characters`}
-        focusX={0.47}
-        focusY={0.555}
-        zoom={0.79}
-        cols={72}
-      />
+      <Portrait src={site.portraitPath} alt="Felipe Duenas" />
     </div>
   </div>
 </section>

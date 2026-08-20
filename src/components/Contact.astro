@@ -3,42 +3,64 @@ import { site } from "../data/site";
 import Icon from "./Icon.astro";
 ---
 
+{/* The portrait closes the page here rather than opening it in the hero, and it's
+    the plain photo — no pixel treatment, no hover effect. Two columns from `sm` up
+    with the photo on the right; below that it stacks under the links, which reads
+    as a sign-off. */}
 <div class="border-t border-rule pt-14" data-reveal>
-  {/* No display heading here — the blurb carries it. A second big serif line this
-      close to the closing image made the page end twice. */}
-  <p class="label">Contact</p>
-  <p class="mt-5 max-w-2xl text-[1.25rem] leading-relaxed text-ink-2 sm:text-[1.375rem]">
-    Don't hesitate to reach out. Students, professionals, or people who want to talk about shooting
-    data centers into space.
-  </p>
+  <div class="grid gap-10 sm:grid-cols-[minmax(0,1fr)_12rem] sm:items-start sm:gap-14">
+    <div>
+      {/* No display heading here — the blurb carries it. A second big serif line this
+          close to the closing image made the page end twice. */}
+      <p class="label">Contact</p>
+      <p class="mt-5 max-w-2xl text-[1.25rem] leading-relaxed text-ink-2 sm:text-[1.375rem]">
+        Don't hesitate to reach out. Students, professionals, or people who want to talk about
+        shooting data centers into space.
+      </p>
 
-  <div class="mt-9 flex flex-wrap items-center gap-x-8 gap-y-3 text-[0.9375rem]">
-    <a
-      href={`mailto:${site.email}`}
-      class="group inline-flex items-center gap-2 text-ink underline decoration-rule-2 decoration-1 underline-offset-[5px] transition-colors duration-200 hover:decoration-accent">
-      <Icon name="mail" class="h-4 w-4 text-ink-3" />
-      {site.email}
-    </a>
-    {
-      site.links
-        .filter((l) => l.icon !== "mail")
-        .map((l) => (
-          <a
-            href={l.href}
-            target="_blank"
-            rel="noopener"
-            class="inline-flex items-center gap-2 text-ink-2 underline decoration-rule decoration-1 underline-offset-[5px] transition-colors duration-200 hover:text-ink hover:decoration-accent">
-            <Icon name={l.icon} class="h-4 w-4 text-ink-3" />
-            {l.label}
-          </a>
-        ))
-    }
-    <a
-      href={site.resumePath}
-      target="_blank"
-      class="inline-flex items-center gap-2 text-ink-2 underline decoration-rule decoration-1 underline-offset-[5px] transition-colors duration-200 hover:text-ink hover:decoration-accent">
-      <Icon name="download" class="h-4 w-4 text-ink-3" />
-      Résumé
-    </a>
+      <div class="mt-9 flex flex-wrap items-center gap-x-8 gap-y-3 text-[0.9375rem]">
+        <a
+          href={`mailto:${site.email}`}
+          class="group inline-flex items-center gap-2 text-ink underline decoration-rule-2 decoration-1 underline-offset-[5px] transition-colors duration-200 hover:decoration-accent">
+          <Icon name="mail" class="h-4 w-4 text-ink-3" />
+          {site.email}
+        </a>
+        {
+          site.links
+            .filter((l) => l.icon !== "mail")
+            .map((l) => (
+              <a
+                href={l.href}
+                target="_blank"
+                rel="noopener"
+                class="inline-flex items-center gap-2 text-ink-2 underline decoration-rule decoration-1 underline-offset-[5px] transition-colors duration-200 hover:text-ink hover:decoration-accent">
+                <Icon name={l.icon} class="h-4 w-4 text-ink-3" />
+                {l.label}
+              </a>
+            ))
+        }
+        <a
+          href={site.resumePath}
+          target="_blank"
+          class="inline-flex items-center gap-2 text-ink-2 underline decoration-rule decoration-1 underline-offset-[5px] transition-colors duration-200 hover:text-ink hover:decoration-accent">
+          <Icon name="download" class="h-4 w-4 text-ink-3" />
+          Résumé
+        </a>
+      </div>
+    </div>
+
+    {/* Capped at 12rem rather than filling its column: at full width it competed
+        with the blurb instead of closing under it. `lazy` because it sits at the
+        very bottom of the page, and the dimensions are stated so it reserves its
+        space instead of shifting the footer when it loads. */}
+    <img
+      src={site.portraitPath}
+      alt="Felipe Duenas"
+      width="900"
+      height="900"
+      loading="lazy"
+      decoding="async"
+      class="w-40 max-w-full border border-rule object-cover sm:w-48 sm:justify-self-end"
+    />
   </div>
 </div>

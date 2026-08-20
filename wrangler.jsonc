@@ -1,0 +1,20 @@
+{
+  // Cloudflare deploy config.
+  //
+  // The build was failing because this file didn't exist. The project was created
+  // as a Worker (hence the *.workers.dev hostname), so its deploy step runs
+  // wrangler — and wrangler with no config has no idea what to upload, so it exits
+  // non-zero after the Astro build has already succeeded.
+  //
+  // There is no Worker script here, only static files: an assets-only Worker is a
+  // supported shape, and `directory` is the whole configuration it needs.
+  //
+  // `name` MUST match the Cloudflare project name or it deploys to a new Worker.
+  "name": "felipe-duenas",
+  "compatibility_date": "2026-08-01",
+  "assets": {
+    "directory": "./dist",
+    // Serve the built 404 page instead of Cloudflare's default.
+    "not_found_handling": "404-page"
+  }
+}

@@ -1,50 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"
      aria-label="Felipe Duenas monogram">
   <!--
-    Old English (Textura Quadrata) FD monogram on cream.
+    8-bit FD monogram, drawn on a 14x10 cell grid to match the pixel art already on
+    the page (the pipeline band, the sunset, the lab figures) - so the mark reads as
+    part of the design rather than as a default.
 
-    Hand-drawn paths, not type: an SVG favicon renders outside the page's font
-    stack, so a font-family of "Old English Text MT" silently falls back to a
-    plain serif almost everywhere.
+    Blackletter was tried first and dropped. Two Old English letters cannot hold at
+    the sizes this mark actually renders at: 32px in the nav and 16px in a browser
+    tab. Every heavy Textura pair fused into one dark shape, and the narrower faces
+    that did survive small sizes turned the D into a U - the pair read "FU", which is
+    not a thing to ship on a portfolio. Plain geometry has no such failure mode.
 
-    Weight alone reads as a gothic sans. What makes it Textura is the nib:
+    The cell is exactly 4px at a 64px card, so it lands on whole device pixels at
+    16, 32, 64 and 128 - the mark stays crisp instead of blurring into grey. Anything
+    that changes `pad` or the grid size breaks that alignment, so change both
+    together and re-check. The nav renders it at 32px for the same reason.
 
-      1. Lozenge terminals that OVERHANG the stem on both sides, top and bottom —
-         the trace of a broad pen held at ~40°.
-      2. A diamond spur partway down the left of the stem.
-      3. Arms bevelled off at 45°, never cut vertically.
-      4. A lozenge set in the counter of the D as pure ornament.
-
-    A hairline off the F's arm and a second spur on the D were both dropped: at
-    16px they landed as isolated specks, and the D's spur was covered by the F
-    anyway. Detail that only resolves at 256px is a liability in a favicon.
-
-    Letters are authored on a ~100-unit em and centred and scaled by the group
-    transform, so nothing is re-plotted by hand to resize.
-    Bbox x 13→104, y 12→80, centre (58.5, 46).
+    One path, one merged rectangle per horizontal run of cells, so this stays about a
+    kilobyte. No inner border: the nav puts its own border on the <img>, and a second
+    one inside it just crowded the letters.
   -->
   <rect width="64" height="64" rx="10" fill="#f6f1e4"/>
-  <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="9.25" fill="none"
-        stroke="#e3dac4" stroke-width="1.5"/>
-
-  <g fill="#14161c" transform="translate(32 32) scale(0.5) translate(-58.5 -46)">
-    <!-- ===== F ===== -->
-    <path d="M22 20 h9 v52 h-9 Z"/>
-    <path d="M15 20 L26.5 12 L38 20 L26.5 28 Z"/>
-    <path d="M14 72 L26.5 64 L39 72 L26.5 80 Z"/>
-    <!-- top arm and crossbar, both bevelled at 45° -->
-    <path d="M26 15 L52 15 L52 21 L44 29 L26 29 Z"/>
-    <path d="M26 41 L48 41 L48 46 L41 53 L26 53 Z"/>
-    <!-- left spur -->
-    <path d="M13 47 L22 41 L22 53 Z"/>
-
-    <!-- ===== D ===== -->
-    <path d="M65 20 h9 v52 h-9 Z"/>
-    <path d="M58 20 L69.5 12 L81 20 L69.5 28 Z"/>
-    <path d="M57 72 L69.5 64 L82 72 L69.5 80 Z"/>
-    <!-- angular bowl: flat top, bevelled shoulders, counter left open -->
-    <path d="M69 15 L93 15 L104 27 L104 59 L93 72 L69 72 L69 63 L90 63 L95 56 L95 31 L90 24 L69 24 Z"/>
-    <!-- ornamental lozenge in the counter -->
-    <path d="M78 43 L83 38 L88 43 L83 48 Z"/>
-  </g>
+  <path fill="#0b0c10" d="M4.000 12.000h24.000v4.000h-24.000zM32.000 12.000h24.000v4.000h-24.000zM4.000 16.000h24.000v4.000h-24.000zM32.000 16.000h28.000v4.000h-28.000zM4.000 20.000h8.000v4.000h-8.000zM32.000 20.000h8.000v4.000h-8.000zM52.000 20.000h8.000v4.000h-8.000zM4.000 24.000h8.000v4.000h-8.000zM32.000 24.000h8.000v4.000h-8.000zM52.000 24.000h8.000v4.000h-8.000zM4.000 28.000h20.000v4.000h-20.000zM32.000 28.000h8.000v4.000h-8.000zM52.000 28.000h8.000v4.000h-8.000zM4.000 32.000h20.000v4.000h-20.000zM32.000 32.000h8.000v4.000h-8.000zM52.000 32.000h8.000v4.000h-8.000zM4.000 36.000h8.000v4.000h-8.000zM32.000 36.000h8.000v4.000h-8.000zM52.000 36.000h8.000v4.000h-8.000zM4.000 40.000h8.000v4.000h-8.000zM32.000 40.000h8.000v4.000h-8.000zM52.000 40.000h8.000v4.000h-8.000zM4.000 44.000h8.000v4.000h-8.000zM32.000 44.000h28.000v4.000h-28.000zM4.000 48.000h8.000v4.000h-8.000zM32.000 48.000h24.000v4.000h-24.000z"/>
 </svg>

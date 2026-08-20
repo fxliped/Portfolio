@@ -17,20 +17,22 @@ export const site = {
   resumePath: "/resume.pdf",
 
   /**
-   * Photo for the ASCII portrait in the hero.
+   * Hero photo: square, already cropped, web-sized.
    *
-   * Points at the derived web copy, not the camera original. portrait.jpeg is a
-   * 24-megapixel 2.6 MB file carrying an EXIF rotation flag; the canvas samples it
-   * down to ~70 characters wide, so shipping the original was 2.5 MB of waste and
-   * left the orientation up to the browser. Regenerate after replacing the photo:
+   * Derived from portrait.jpeg, which is a 24-megapixel 2.6 MB camera file with an
+   * EXIF rotation flag. Baking the crop and the rotation into a separate file keeps
+   * the orientation out of the browser's hands and the payload at ~70 kB.
+   * Regenerate after replacing the photo:
    *
    *   python3 -c "from PIL import Image, ImageOps; \
    *     im=ImageOps.exif_transpose(Image.open('public/portrait.jpeg')).convert('RGB'); \
-   *     s=1400/max(im.size); \
-   *     im.resize((round(im.width*s), round(im.height*s)), Image.LANCZOS) \
-   *       .save('public/portrait-web.jpg', quality=82, optimize=True)"
+   *     s=min(im.size)*0.79; \
+   *     x=max(0,min(im.width-s, 0.47*im.width-s/2)); \
+   *     y=max(0,min(im.height-s,0.555*im.height-s/2)); \
+   *     im.crop((int(x),int(y),int(x+s),int(y+s))).resize((900,900), Image.LANCZOS) \
+   *       .save('public/portrait-crop.jpg', quality=84, optimize=True)"
    */
-  portraitPath: "/portrait-web.jpg",
+  portraitPath: "/portrait-crop.jpg",
 
   currently:
     "At AWS that means the data infrastructure and pipeline logic for a supply chain automation platform — along with the agentic work so the platform's agent doesn't just sound better, it drives results.",

@@ -1,0 +1,432 @@
+---
+interface Props {
+  /** Square, pre-cropped photo in public/. */
+  src: string;
+  alt: string;
+  /** Grid resolution — how many cells across. Each cell holds one digit. */
+  cols?: number;
+  /**
+   * `digits` — the glyphs alone carry the tone, on a flat backdrop.
+   * `grey` / `colour` — each cell is filled from the photo first and the glyph goes
+   * over it at low contrast, so the face reads no matter what the glyphs do.
+   */
+  mode?: "digits" | "grey" | "colour";
+  class?: string;
+}
+const { src, alt, cols = 64, mode = "colour", class: className = "" } = Astro.props;
+---
+
+{/* The photo rendered as a grid of digits, one per cell, monochrome.
+
+    Each digit's ink weight matches how dark its cell is, so the numbers ARE the
+    pixels rather than sitting on top of them. Cells swap digit on a stagger —
+    about a quarter of the grid turns over at a time — which reads as a live
+    readout instead of the picture flickering. Nothing reacts to the pointer.
+
+    The photo stays in the DOM under the canvas as the fallback. If the canvas
+    can't be sampled (a tainted canvas, a blocked image) the canvas never gets its
+    `data-ready` flag, stays transparent, and the plain photo shows through. */}
+<figure class={`portrait ${className}`} data-portrait data-cols={cols} data-mode={mode}>
+  <img
+    src={src}
+    alt={alt}
+    width="900"
+    height="900"
+    class="portrait-photo"
+    loading="eager"
+    decoding="async"
+  />
+  <canvas data-portrait-canvas class="portrait-mosaic" aria-hidden="true"></canvas>
+</figure>
+
+<style>
+  .portrait {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 1;
+    border: 1px solid var(--color-rule);
+    /* Slightly deeper than the page, so the mosaic reads as its own surface. */
+    --mosaic-bg: #ded9d0;
+    --mosaic-ink: #14161c;
+  }
+
+  :global(html[data-theme="dark"]) .portrait {
+    --mosaic-bg: #15181e;
+    --mosaic-ink: #d9dce3;
+  }
+
+  .portrait-photo {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* width/height are explicit rather than left to `inset`: a canvas is a replaced
+     element, so an absolutely positioned one with `width: auto` takes its
+     INTRINSIC width instead of stretching to its offsets. Sizing the backing store
+     from clientWidth then fed that number back into layout and the canvas doubled
+     on every frame. */
+  .portrait-mosaic {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  /* Hidden until the photo has been sampled, so there's no flash of bare photo. */
+  .portrait-mosaic:not([data-ready]) {
+    opacity: 0;
+  }
+</style>
+
+<script>
+  /**
+   * Digits grouped by ink weight, sparse → dense.
+   *
+   * Every entry in a step has to carry about the same coverage, or a cell swapping
+   * within its step would change tone and the picture would shimmer instead of the
+   * characters. Digits lead wherever one exists at that weight.
+   */
+  const LEVELS = [
+    " ",
+    "1'",
+    ":7",
+    "-3",
+    "72",
+    "3c",
+    "2o",
+    "50",
+    "0a",
+    "64",
+    "89",
+    "&#",
+    "@#",
+  ];
+
+  /** Digits used by the cell-filled modes, where tone comes from the fill and the
+      glyph is free to be any numeral. */
+  const DIGITS = "0123456789";
+
+  /** How long a digit holds before the next swap, in ms. */
+  const TICK = 120;
+
+  /** How far the glyph's tone is pushed away from its cell, in `grey`/`colour`. */
+  const GLYPH_CONTRAST = 0.3;
+
+  function hexChannels(hex: string): string {
+    const h = hex.replace("#", "").trim();
+    const full =
+      h.length === 3
+        ? h
+            .split("")
+            .map((c) => c + c)
+            .join("")
+        : h;
+    const n = parseInt(full, 16);
+    if (Number.isNaN(n) || full.length !== 6) return "20,22,28";
+    return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`;
+  }
+
+  function setup(fig: HTMLElement) {
+    const canvas = fig.querySelector<HTMLCanvasElement>("[data-portrait-canvas]");
+    const img = fig.querySelector<HTMLImageElement>(".portrait-photo");
+    if (!canvas || !img) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const cols = Number(fig.dataset.cols ?? 64);
+    const rows = cols;
+    const mode = (fig.dataset.mode ?? "colour") as "digits" | "grey" | "colour";
+
+    let level: number[][] | null = null;
+    let phase: number[][] = [];
+    /** Raw per-cell colour and luminance, for the modes that fill the cell. */
+    let cellRGB: Uint8ClampedArray | null = null;
+    let cellLum: Float32Array | null = null;
+    let frame = 0;
+
+    /** Sample the photo into a cols × rows grid of density levels. */
+    function sample() {
+      /* Halving steps rather than one jump: collapsing ~900px in a single
+         drawImage samples too coarsely and loses the local contrast the
+         sharpening below depends on. */
+      let cur = document.createElement("canvas");
+      cur.width = img!.naturalWidth || 900;
+      cur.height = img!.naturalHeight || 900;
+      const c0 = cur.getContext("2d");
+      if (!c0) return false;
+      c0.drawImage(img!, 0, 0);
+
+      while (Math.floor(cur.width / 2) > cols) {
+        const next = document.createElement("canvas");
+        next.width = Math.floor(cur.width / 2);
+        next.height = Math.floor(cur.height / 2);
+        const nc = next.getContext("2d");
+        if (!nc) break;
+        nc.imageSmoothingEnabled = true;
+        nc.imageSmoothingQuality = "high";
+        nc.drawImage(cur, 0, 0, next.width, next.height);
+        cur = next;
+      }
+
+      const off = document.createElement("canvas");
+      off.width = cols;
+      off.height = rows;
+      const oc = off.getContext("2d", { willReadFrequently: true });
+      if (!oc) return false;
+      oc.imageSmoothingEnabled = true;
+      oc.imageSmoothingQuality = "high";
+      oc.drawImage(cur, 0, 0, cols, rows);
+
+      let data: Uint8ClampedArray;
+      try {
+        data = oc.getImageData(0, 0, cols, rows).data;
+      } catch {
+        return false; // tainted canvas; leave the mosaic off
+      }
+
+      const lum: number[][] = [];
+      cellRGB = new Uint8ClampedArray(cols * rows * 3);
+      cellLum = new Float32Array(cols * rows);
+      for (let y = 0; y < rows; y++) {
+        const row: number[] = [];
+        for (let x = 0; x < cols; x++) {
+          const c = y * cols + x;
+          const i = c * 4;
+          const v = (0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]) / 255;
+          row.push(v);
+          cellRGB[c * 3] = data[i];
+          cellRGB[c * 3 + 1] = data[i + 1];
+          cellRGB[c * 3 + 2] = data[i + 2];
+          cellLum[c] = v;
+        }
+        lum.push(row);
+      }
+
+      /* Blur, then stretch the true tone and ADD a signed detail term on top — an
+         unsharp mask. Cross-fading toward the blurred copy instead drags every cell
+         to mid-grey and the face stops reading. */
+      const r = Math.max(2, Math.round(cols / 8));
+      const blur: number[][] = [];
+      for (let y = 0; y < rows; y++) {
+        const row: number[] = [];
+        for (let x = 0; x < cols; x++) {
+          let s = 0;
+          let n = 0;
+          for (let dy = -r; dy <= r; dy++) {
+            const yy = y + dy;
+            if (yy < 0 || yy >= rows) continue;
+            for (let dx = -r; dx <= r; dx++) {
+              const xx = x + dx;
+              if (xx < 0 || xx >= cols) continue;
+              s += lum[yy][xx];
+              n++;
+            }
+          }
+          row.push(s / n);
+        }
+        blur.push(row);
+      }
+
+      let lo = 1;
+      let hi = 0;
+      for (const row of lum) {
+        for (const v of row) {
+          if (v < lo) lo = v;
+          if (v > hi) hi = v;
+        }
+      }
+      const span = hi - lo;
+
+      level = [];
+      phase = [];
+      for (let y = 0; y < rows; y++) {
+        const lr: number[] = [];
+        const pr: number[] = [];
+        for (let x = 0; x < cols; x++) {
+          const base = span > 0.05 ? (lum[y][x] - lo) / span : lum[y][x];
+          const v = Math.max(0, Math.min(1, base + (lum[y][x] - blur[y][x]) * 2.4));
+          const t = 1 - v;
+          lr.push(Math.min(LEVELS.length - 1, Math.max(0, Math.round(t * (LEVELS.length - 1)))));
+          pr.push((x * 7 + y * 13) % 16);
+        }
+        level.push(lr);
+        phase.push(pr);
+      }
+      return true;
+    }
+
+    function draw() {
+      if (!level || !ctx) return;
+
+      const w = fig.clientWidth;
+      const h = fig.clientHeight;
+      if (!w || !h) return;
+
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      if (canvas!.width !== Math.round(w * dpr)) {
+        canvas!.width = Math.round(w * dpr);
+        canvas!.height = Math.round(h * dpr);
+      }
+
+      const cs = getComputedStyle(fig);
+      const bg = hexChannels(cs.getPropertyValue("--mosaic-bg") || "#ded9d0");
+      const ink = hexChannels(cs.getPropertyValue("--mosaic-ink") || "#14161c");
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+
+      /* Opaque backdrop: this is what hides the photo. */
+      ctx.fillStyle = `rgb(${bg})`;
+      ctx.fillRect(0, 0, w, h);
+
+      const cw = w / cols;
+      const ch = h / rows;
+      ctx.font = `${(cw * 1.15).toFixed(2)}px ui-monospace, "SF Mono", Menlo, monospace`;
+      ctx.textBaseline = "middle";
+
+      if (mode === "digits") {
+        ctx.fillStyle = `rgb(${ink})`;
+        for (let y = 0; y < rows; y++) {
+          for (let x = 0; x < cols; x++) {
+            const bucket = LEVELS[level[y][x]];
+            if (bucket === " ") continue;
+            const g = bucket[Math.floor((frame + phase[y][x]) / 4) % bucket.length];
+            ctx.fillText(g, x * cw, y * ch + ch / 2);
+          }
+        }
+        return;
+      }
+
+      /* Cell-filled modes: the fill carries the tone, so the glyph doesn't have to.
+         That frees every cell to show a plain rotating digit — and it means the
+         face still reads no matter which digit happens to be up. */
+      if (!cellRGB || !cellLum) return;
+      for (let y = 0; y < rows; y++) {
+        const y0 = Math.round(y * ch);
+        const y1 = Math.round((y + 1) * ch);
+        for (let x = 0; x < cols; x++) {
+          const c = y * cols + x;
+          const t = cellLum[c];
+          let r: number;
+          let g: number;
+          let b: number;
+          if (mode === "grey") {
+            r = g = b = t * 255;
+          } else {
+            r = cellRGB[c * 3];
+            g = cellRGB[c * 3 + 1];
+            b = cellRGB[c * 3 + 2];
+          }
+
+          const x0 = Math.round(x * cw);
+          ctx.fillStyle = `rgb(${r | 0},${g | 0},${b | 0})`;
+          ctx.fillRect(x0, y0, Math.round((x + 1) * cw) - x0, y1 - y0);
+
+          /* Push the glyph away from its cell's own tone — toward black on a light
+             cell, toward white on a dark one — so it stays visible everywhere
+             instead of vanishing in the shadows. */
+          const away = t > 0.5 ? 0 : 255;
+          const k = GLYPH_CONTRAST;
+          ctx.fillStyle =
+            `rgb(${(r + (away - r) * k) | 0},` +
+            `${(g + (away - g) * k) | 0},` +
+            `${(b + (away - b) * k) | 0})`;
+          /* Divided by 4, like the digits mode: each cell holds its numeral for
+             four ticks, and because `phase` spreads cells across those four, only
+             about a quarter of the grid turns over on any one tick. Without the
+             divisor every cell changes on the same tick and the whole grid reads as
+             a flicker rather than a stagger. */
+          const g2 = DIGITS[Math.floor((frame + phase[y][x]) / 4) % DIGITS.length];
+          ctx.fillText(g2, x0, y * ch + ch / 2);
+        }
+      }
+    }
+
+    let raf = 0;
+    const schedule = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(draw);
+    };
+
+    const start = () => {
+      if (!sample()) return;
+      canvas!.dataset.ready = "";
+      draw();
+
+      new ResizeObserver(schedule).observe(fig);
+      new MutationObserver(schedule).observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["data-theme"],
+      });
+
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+      /* Gated on wall-clock rather than frame count, so the churn runs at the same
+         speed regardless of display refresh rate. */
+      let visible = true;
+      let last = 0;
+      let loopRaf = 0;
+      let stopped = false;
+      const loop = (now: number) => {
+        if (stopped) return;
+        loopRaf = requestAnimationFrame(loop);
+        if (!visible) return;
+        if (now - last < TICK) return;
+        last = now;
+        frame++;
+        draw();
+      };
+      loopRaf = requestAnimationFrame(loop);
+
+      /* Client-side navigation replaces the page without unloading it, so an
+         uncancelled loop would survive the swap and a second one would start on
+         the way back — two loops drawing the same canvas forever. */
+      document.addEventListener(
+        "astro:before-swap",
+        () => {
+          stopped = true;
+          cancelAnimationFrame(loopRaf);
+          cancelAnimationFrame(raf);
+        },
+        { once: true },
+      );
+
+      /* Stop churning while scrolled past — it's the only thing on the page that
+         animates on its own. */
+      new IntersectionObserver(
+        (entries) => {
+          visible = entries[0].isIntersecting;
+        },
+        { rootMargin: "120px" },
+      ).observe(fig);
+    };
+
+    if (img.complete && img.naturalWidth) start();
+    else img.addEventListener("load", start, { once: true });
+  }
+
+  /* Guarded, because the two triggers below can both fire for the same load. */
+  const wired = new WeakSet<HTMLElement>();
+
+  function initPortraits() {
+    document.querySelectorAll<HTMLElement>("[data-portrait]").forEach((el) => {
+      if (wired.has(el)) return;
+      wired.add(el);
+      setup(el);
+    });
+  }
+
+  /* astro:page-load is the one that matters after a client-side navigation, but it
+     only exists when <ClientRouter> is on the page. Falling back to DOM readiness
+     means a page without the router still gets the mosaic rather than silently
+     showing the bare photo. */
+  document.addEventListener("astro:page-load", initPortraits);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initPortraits);
+  } else {
+    initPortraits();
+  }
+</script>
