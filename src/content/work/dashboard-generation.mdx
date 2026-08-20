@@ -12,17 +12,13 @@ figures:
     caption: "Generation is a graph, not a prompt chain — so failed validation has a defined place to go instead of a retry loop that burns tokens and gives up."
 metrics:
   - value: "3 days → 4 min"
-    label: "Average dashboard development time"
+    label: "Median dashboard development time"
   - value: "15"
     label: "Features scoped with stakeholders"
 summary: "Reading dashboards was half the problem. I architected the agent tooling that turns a natural-language request into a context-specific dashboard — three days of work down to four minutes."
 links: []
 images: []
 ---
-
-{/* REVIEW — this one needs the most from you. Your resume gives the outcome but not
-    the internals, so I wrote the architecture only as far as I could justify and left
-    TODOs rather than inventing. Fill those and this becomes the strongest study here. */}
 
 ## Context
 
@@ -56,11 +52,16 @@ validate, repair, emit. A graph makes those states explicit — and the failure 
 **Grounding in the knowledge base from the first project**, so a new dashboard inherits the
 existing estate's definitions instead of inventing its own.
 
-{/* TODO: fill in the specifics only you know —
-    - What validation actually checks before a spec is accepted
-    - Whether output is a Tableau spec, a published workbook, or a draft for review
-    - How "4 minutes" was measured (wall clock? median? over how many requests?)
-    - What the human still does in the loop */}
+**Three gates before a draft is accepted.** The SQL has to run against Redshift. Every table
+and column it references has to exist in the real schema. And every metric has to match the
+definition already in the knowledge base. The first two only stop the output from being
+broken. The third stops it from being quietly wrong, which is the failure that actually costs
+something — a dashboard that renders cleanly and disagrees with the one next to it.
+
+**What comes out is a draft, not a published dashboard.** A person opens it, checks it, and
+publishes it themselves. That was a deliberate limit rather than a missing feature: the tool is
+allowed to be wrong as long as being wrong stays cheap and visible. Nothing it produces becomes
+authoritative without someone saying so.
 
 To decide what to build I analyzed legacy dashboard usage in Redshift and worked the findings
 through with planning, infra and BI stakeholders — **15 high-value features** with named
@@ -68,17 +69,22 @@ owners, which is why the tooling targeted the requests people actually made.
 
 ## The hard part
 
-**Making retrieved context earn its place.** Everything in the prompt costs tokens and
-attention, and adding more context hurt about as often as it helped. The generator improved
-when retrieval got *narrower*, not bigger.
+**The agent was never the bottleneck. The definitions were.**
 
-{/* TODO: confirm or replace — was context scope really your main tuning axis, or was it
-    graph structure or tool granularity? */}
+I spent a while tuning the things that look like the problem: how much context to retrieve,
+where to split the graph, how granular each tool should be. All of it helped a little. What
+actually moved the output was going back to the knowledge base and getting the metric
+definitions right.
+
+Obvious in hindsight. A generator grounded in a definition inherits that definition, mistakes
+included. Two dashboards disagreeing about what "utilization" means isn't an agent problem —
+it's a data problem, and you can't fix it from downstream with a better prompt.
 
 ## Outcome
 
-Three days to four minutes. The more interesting effect was on demand: when a view costs
-minutes instead of days, people ask questions they wouldn't have bothered to ask.
+Three days down to a median of about four minutes. The more interesting effect was on demand:
+when a view costs minutes instead of days, people ask questions they wouldn't have bothered to
+ask.
 
 ## What I'd do differently
 

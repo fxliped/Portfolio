@@ -1,6 +1,7 @@
 ---
 import Icon from "./Icon.astro";
 import Diagram from "./Diagram.astro";
+import { orgLogo } from "../data/site";
 
 interface Props {
   index: number;
@@ -42,6 +43,8 @@ const extra = stack.length - chips.length;
    strokes all shift to the same colour without a second prop. */
 const ACCENTS = ["accent-blue", "accent-orange", "accent-purple"] as const;
 const accent = ACCENTS[(index - 1) % ACCENTS.length];
+
+const logo = orgLogo(org);
 ---
 
 {/* A panel, not the old index row: the diagram carries the visual and the grid
@@ -65,9 +68,25 @@ const accent = ACCENTS[(index - 1) % ACCENTS.length];
   }
 
   <div class="flex flex-1 flex-col p-6 sm:p-7">
-    {/* Org first, then dates. "Built at AWS" is the fact that sets the stakes. */}
-    <div class="flex items-baseline justify-between gap-4">
-      <span class="label !text-accent">{org}</span>
+    {/* Org first, then dates. "Built at AWS" is the fact that sets the stakes, so
+        the logo sits with it — same lookup the timeline uses, so the two can't
+        disagree. onerror falls back to the name alone rather than a broken image. */}
+    <div class="flex items-center justify-between gap-4">
+      <span class="flex min-w-0 items-center gap-2.5">
+        {
+          logo && (
+            <img
+              src={logo.src}
+              alt=""
+              class:list={[logo.mono ? "logo-mark h-3.5" : "h-7 opacity-90", "w-auto shrink-0"]}
+              loading="lazy"
+              decoding="async"
+              onerror="this.remove();"
+            />
+          )
+        }
+        <span class="label truncate !text-accent">{org}</span>
+      </span>
       <span class="shrink-0 text-[0.75rem] text-ink-3">{period}</span>
     </div>
 

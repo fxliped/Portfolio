@@ -1,0 +1,195 @@
+---
+/**
+ * The three Lab panel figures, in one file because they're one set: same grid,
+ * same palette, same idiom, and they only make sense next to each other. Split
+ * into three components they'd drift.
+ *
+ * 64×27 matches the panel media slot's aspect (~2.4:1) so the art pixels stay
+ * square without the box needing a fixed height.
+ */
+import { makeGrid, blit, box, fillRect, paths, setPx } from "../../lib/pixel";
+
+interface Props {
+  /** Which figure to draw. An unknown key renders nothing. */
+  name: string;
+}
+const { name } = Astro.props;
+
+const W = 64;
+const H = 27;
+const BASE = { "#": "ink", "=": "fill" };
+
+const grid = makeGrid(W, H);
+
+/** A tiny bar chart on a baseline, bars given as [dx, height, key]. */
+function chart(x0: number, baseY: number, bars: readonly [number, number, string][]): void {
+  for (const [dx, h, key] of bars) fillRect(grid, x0 + dx, baseY - h, 3, h, key);
+}
+
+if (name === "data-pipe") {
+  /* Data engineering: paged source, a pipe, a warehouse, then the daily series
+     that comes out the far end. */
+  for (const [dx, dy] of [
+    [3, 4],
+    [1, 7],
+  ] as const) {
+    box(grid, dx, dy, 9, 5, "ink", "fill");
+    fillRect(grid, dx + 2, dy + 2, 5, 1, "gold");
+  }
+  /* Pipe run with a dogleg, so it reads as plumbing rather than an arrow. */
+  fillRect(grid, 11, 9, 8, 2, "blue");
+  fillRect(grid, 17, 9, 2, 7, "blue");
+  fillRect(grid, 17, 14, 8, 2, "blue");
+  box(grid, 24, 10, 9, 9, "ink", "fill");
+  for (const y of [12, 15, 17]) fillRect(grid, 25, y, 7, 1, "blue");
+  chart(37, 20, [
+    [0, 5, "gold"],
+    [4, 9, "orange"],
+    [8, 6, "gold"],
+    [12, 12, "orange"],
+    [16, 8, "gold"],
+    [20, 14, "orange"],
+  ]);
+  fillRect(grid, 36, 20, 26, 1, "ink");
+}
+
+if (name === "agent-game") {
+  /* Applied AI: two agents facing a board between them, with a trace of the moves
+     scrolling underneath. */
+  const BOT = [
+    "...o...",
+    "...#...",
+    "#######",
+    "#=====#",
+    "#=o=o=#",
+    "#=====#",
+    "#==#==#",
+    "#######",
+    ".#...#.",
+  ];
+  blit(grid, BOT, 2, 3, { ...BASE, o: "gold" });
+  blit(grid, BOT, 55, 3, { ...BASE, o: "violet" });
+
+  /* A 3×3 board, one row already claimed. */
+  box(grid, 22, 3, 20, 14, "ink", "fill");
+  for (const x of [28, 35]) fillRect(grid, x, 4, 1, 12, "rail");
+  for (const y of [7, 11]) fillRect(grid, 23, y, 18, 1, "rail");
+  for (const [x, y, key] of [
+    [24, 4, "orange"],
+    [31, 8, "orange"],
+    [38, 12, "orange"],
+    [38, 4, "violet"],
+    [24, 8, "violet"],
+  ] as const) {
+    fillRect(grid, x, y, 3, 3, key);
+  }
+
+  /* Reasoning trace: dashed lines of varying length. */
+  for (const [y, len] of [
+    [20, 30],
+    [22, 44],
+    [24, 22],
+  ] as const) {
+    for (let x = 12; x < 12 + len; x++) if (x % 3 < 2) setPx(grid, x, y, "rail");
+  }
+}
+
+if (name === "market-lstm") {
+  /* Finance: candlesticks for what happened, then a dashed forecast for the part
+     the model is guessing at, with a confidence band around it. */
+  fillRect(grid, 2, 22, 60, 1, "ink");
+  const candles: readonly [number, number, number, string][] = [
+    [4, 14, 5, "orange"],
+    [9, 11, 7, "gold"],
+    [14, 13, 4, "orange"],
+    [19, 8, 8, "gold"],
+    [24, 10, 5, "orange"],
+    [29, 6, 9, "gold"],
+    [34, 9, 5, "orange"],
+  ];
+  for (const [x, y, h, key] of candles) {
+    fillRect(grid, x + 1, y - 2, 1, h + 4, "rail"); // wick
+    fillRect(grid, x, y, 3, h, key);
+  }
+
+  /* The band first, so the forecast line sits on top of it. */
+  for (let i = 0; i < 20; i++) {
+    const x = 41 + i;
+    const mid = 8 - Math.round(i * 0.18);
+    const spread = 1 + Math.round(i * 0.22);
+    for (let y = mid - spread; y <= mid + spread; y++) setPx(grid, x, y, "band");
+  }
+  for (let i = 0; i < 20; i++) {
+    if (i % 3 === 2) continue;
+    setPx(grid, 41 + i, 8 - Math.round(i * 0.18), "violet");
+  }
+  /* Marks where measurement stops and prediction starts. */
+  for (let y = 3; y < 22; y += 3) fillRect(grid, 39, y, 1, 2, "rail");
+}
+
+const layers = paths(grid);
+---
+
+{
+  layers.length > 0 && (
+    <div class="lab-figure" aria-hidden="true">
+      <svg viewBox={`0 0 ${W} ${H}`} role="presentation">
+        {layers.map((l) => (
+          <path d={l.d} class={`lf-${l.key}`} />
+        ))}
+      </svg>
+    </div>
+  )
+}
+
+<style>
+  /* The sunset palette again, so the Lab panels, the work band and the closing
+     image all read as one picture. */
+  .lab-figure {
+    --lf-violet: #7b5590;
+    --lf-blue: #5a7fa8;
+    --lf-orange: #c26a41;
+    --lf-gold: #d99a56;
+    --lf-band: #e3d5df;
+  }
+
+  :global(html[data-theme="dark"]) .lab-figure {
+    --lf-violet: #8a63a3;
+    --lf-blue: #6d8fb5;
+    --lf-orange: #b5623a;
+    --lf-gold: #c98d4d;
+    --lf-band: #2a2338;
+  }
+
+  .lab-figure svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    shape-rendering: crispEdges;
+  }
+
+  .lf-ink {
+    fill: var(--color-ink);
+  }
+  .lf-fill {
+    fill: var(--color-paper-2);
+  }
+  .lf-rail {
+    fill: var(--color-rule-2);
+  }
+  .lf-band {
+    fill: var(--lf-band);
+  }
+  .lf-violet {
+    fill: var(--lf-violet);
+  }
+  .lf-blue {
+    fill: var(--lf-blue);
+  }
+  .lf-orange {
+    fill: var(--lf-orange);
+  }
+  .lf-gold {
+    fill: var(--lf-gold);
+  }
+</style>

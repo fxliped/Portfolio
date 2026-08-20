@@ -8,27 +8,35 @@
 export const site = {
   name: "Felipe Duenas",
   initials: "FD",
-  role: "Software engineer · applied AI and data engineering",
-  positioning: "The retrieval layer AI agents stand on",
+  role: "Software Engineer · Data Engineering and Applied AI",
+  positioning: "Software that enlivens data for intelligent decisions",
   /** One quiet line under the intro — the facts people scan for first. */
-  subline: "Statistics & Data Science at UCLA, class of 2027",
-  location: "Los Angeles and the SF Bay Area",
+  subline: "Statistics & Data Science, UCLA '27",
+  location: "SF Bay Area | Los Angeles",
   email: "duenasfd@gmail.com",
   resumePath: "/resume.pdf",
 
   /**
-   * Photo for the ASCII portrait in the hero. Square-ish, 800px or more, plain
-   * background, daylight. Nothing renders until this file exists in public/, so
-   * the page is unchanged while it's missing.
+   * Photo for the ASCII portrait in the hero.
+   *
+   * Points at the derived web copy, not the camera original. portrait.jpeg is a
+   * 24-megapixel 2.6 MB file carrying an EXIF rotation flag; the canvas samples it
+   * down to ~70 characters wide, so shipping the original was 2.5 MB of waste and
+   * left the orientation up to the browser. Regenerate after replacing the photo:
+   *
+   *   python3 -c "from PIL import Image, ImageOps; \
+   *     im=ImageOps.exif_transpose(Image.open('public/portrait.jpeg')).convert('RGB'); \
+   *     s=1400/max(im.size); \
+   *     im.resize((round(im.width*s), round(im.height*s)), Image.LANCZOS) \
+   *       .save('public/portrait-web.jpg', quality=82, optimize=True)"
    */
-  portraitPath: "/portrait.jpg",
+  portraitPath: "/portrait-web.jpg",
 
   currently:
-    "At AWS, building the retrieval layer under an internal supply-chain agent — the pipelines that feed it, the contracts that keep it honest, and the evaluation that tells us whether it got better.",
+    "At AWS that means the data infrastructure and pipeline logic for a supply chain automation platform — along with the agentic work so the platform's agent doesn't just sound better, it drives results.",
 
   intro: [
-    "I'm a software engineer who specializes in data. At AWS that means the retrieval layer under an internal supply-chain agent: the pipelines that feed it, the contracts that keep it honest, and the evaluation that says whether it got better or only sounds better.",
-    "I came in through statistics and machine learning, and the last two years have been the engineering side of applied AI — agents, data infrastructure, and the unglamorous plumbing that decides whether either one actually works.",
+    "I'm a software engineer who specializes in data. At AWS that means the data infrastructure and pipeline logic for a supply chain automation platform — along with the agentic work so the platform's agent doesn't just sound better, it drives results.",
   ],
 
   links: [
@@ -99,6 +107,12 @@ export interface Role {
   /** Kept for reference; the timeline stopped rendering these to cut noise. */
   stack: string[];
   /**
+   * Whether to flatten the logo to one ink colour. True suits a wordmark. Set
+   * false for anything with fine internal detail — UCLA's seal flattens to a solid
+   * dot at 28px, and its blue reads cleanly against both themes as-is.
+   */
+  logoMono?: boolean;
+  /**
    * Optional logo dropped into public/logos/ (SVG preferred, or 2x PNG).
    * Falls back to the company name set in the display serif, which looks
    * deliberate rather than broken — so the strip works before you add any.
@@ -109,6 +123,7 @@ export interface Role {
 export const experience: Role[] = [
   {
     company: "Amazon Web Services",
+    logo: "/logos/aws.png",
     team: "Data Platform",
     years: "2026 —",
     title: "Software Engineer Intern",
@@ -123,6 +138,8 @@ export const experience: Role[] = [
   },
   {
     company: "UCLA Trustworthy AI Labs",
+    logo: "/logos/ucla.png",
+    logoMono: false,
     team: "Agentic Data Science",
     years: "2026",
     title: "Backend & AI Engineer Intern",
@@ -133,7 +150,14 @@ export const experience: Role[] = [
       "Built an agent that plans and runs a whole analysis from a plain-language question — 71% task completion on the BIRD benchmark, eight points above GPT-4o.",
       "The interesting part was the harness that told us why it failed: 34 schemas, 120+ question types, and three architectural fixes worth +11% that we'd never have found from a pass/fail score.",
     ],
-    stack: ["Python", "AWS Lambda", "API Gateway", "CDK", "Docker", "PostgreSQL"],
+    stack: [
+      "Python",
+      "AWS Lambda",
+      "API Gateway",
+      "CDK",
+      "Docker",
+      "PostgreSQL",
+    ],
   },
   {
     company: "Amazon Web Services",
@@ -151,6 +175,7 @@ export const experience: Role[] = [
   },
   {
     company: "Acer",
+    logo: "/logos/acer.png",
     team: "",
     years: "2024",
     title: "Data Analyst Intern",
@@ -158,12 +183,28 @@ export const experience: Role[] = [
     location: "San Jose, CA",
     current: false,
     bullets: [
-      "My first real data job: twenty years of records scattered across Oracle, SharePoint and spreadsheets, pulled into one model that cut cross-team query time by 35%.",
+      "Twenty years of records scattered across Oracle, SharePoint, and spreadsheets, pulled into one model that cut cross-team query time by 35%.",
       "Reconciling 12,000+ IT assets turned up a $22K licensing discrepancy nobody had noticed. It was fixed within one billing cycle.",
     ],
     stack: ["SQL", "Oracle DB", "Tableau", "Excel", "SharePoint"],
   },
 ];
+
+/**
+ * Logo for an organisation name, for the case-study panels.
+ *
+ * Derived from `experience` rather than duplicated, so a logo added to the timeline
+ * shows up on the work panels too and the two can't disagree. Case studies name
+ * their org as a plain string, which is the only join key available.
+ */
+export function orgLogo(
+  org: string,
+): { src: string; mono: boolean } | undefined {
+  const role = experience.find((r) => r.company === org && r.logo);
+  return role?.logo
+    ? { src: role.logo, mono: role.logoMono !== false }
+    : undefined;
+}
 
 /**
  * Deliberately short. This was five groups and 35 entries, which reads as a
@@ -175,16 +216,33 @@ export const skills = [
     items: ["Python", "SQL", "Java", "R", "Bash"],
   },
   {
+    group: "Cloud",
+    items: ["AWS", "GCP", "Redshift", "Snowflake", "S3", "Lambda", "Bedrock"],
+  },
+  {
     group: "Data platform",
-    items: ["Airflow", "dbt", "Spark", "Redshift", "Snowflake", "Docker", "Terraform", "CDK"],
+    items: ["Airflow", "dbt", "Spark", "Docker", "Terraform", "CDK"],
   },
   {
     group: "Applied AI",
-    items: ["Claude", "LangGraph", "MCP", "RAG", "Retrieval evaluation", "Vector databases"],
+    items: [
+      "Claude",
+      "LangGraph",
+      "MCP",
+      "RAG",
+      "Retrieval evaluation",
+      "Vector databases",
+    ],
   },
   {
     group: "Modeling",
-    items: ["scikit-learn", "PyTorch", "Forecasting", "Anomaly detection", "NLP"],
+    items: [
+      "scikit-learn",
+      "PyTorch",
+      "Forecasting",
+      "Anomaly detection",
+      "NLP",
+    ],
   },
 ] as const;
 
@@ -206,7 +264,8 @@ export interface LabProject {
   tags: string[];
   repo: string;
   accent: "accent-blue" | "accent-orange" | "accent-purple";
-  preview?: { src: string; alt: string; width: number; height: number };
+  /** Key into components/pixel/LabFigure.astro — the panel's 8-bit figure. */
+  figure: "data-pipe" | "agent-game" | "market-lstm";
 }
 
 export const lab: LabProject[] = [
@@ -218,6 +277,7 @@ export const lab: LabProject[] = [
     tags: ["Airflow", "dbt", "Snowflake", "S3", "Docker"],
     repo: "https://github.com/fxliped/event-demand-intelligence",
     accent: "accent-blue",
+    figure: "data-pipe",
   },
   {
     title: "Autonomous reasoning agent",
@@ -227,6 +287,7 @@ export const lab: LabProject[] = [
     tags: ["Python", "ReAct", "Gemini", "Tracing"],
     repo: "https://github.com/fxliped/Autonomous-Reasoning-Agent",
     accent: "accent-orange",
+    figure: "agent-game",
   },
   {
     title: "Asset Edge",
@@ -236,6 +297,7 @@ export const lab: LabProject[] = [
     tags: ["FastAPI", "React", "LangChain", "ChromaDB", "PyTorch"],
     repo: "https://github.com/fxliped/GenAI-Finance-Engine",
     accent: "accent-purple",
+    figure: "market-lstm",
   },
 ];
 
@@ -244,6 +306,5 @@ export const education = [
     school: "University of California, Los Angeles",
     degree: "B.S. Statistics & Data Science · Minor in Data Engineering",
     period: "Expected March 2027",
-    detail: "GPA 3.86",
   },
 ] as const;

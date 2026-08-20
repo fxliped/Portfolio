@@ -1,0 +1,263 @@
+---
+/**
+ * 8-bit band of the shape of the work: sources land, pipelines move them, a
+ * warehouse holds them, models read them, an agent reasons over them, and an
+ * answer comes back.
+ *
+ * Each stage declares its own x-range and draws itself, so the caption underneath
+ * can be positioned from the SAME numbers the sprites are drawn from. When the
+ * label positions were a separate hand-written list they drifted out of alignment
+ * the first time a sprite moved.
+ *
+ * Simple stages use the box/fill helpers rather than character art — a rectangle
+ * authored as rows of `#` has to be counted by hand and an off-by-one is invisible
+ * in the source. Only the agent and the answer are sprites, because they need
+ * real detail.
+ *
+ * The palette is the sunset's, so the two bands read as one pair.
+ */
+import { makeGrid, blit, box, fillRect, paths, setPx } from "../../lib/pixel";
+
+const W = 176;
+const H = 18;
+const RAIL = 17;
+
+const grid = makeGrid(W, H);
+const BASE = { "#": "ink", "=": "fill" };
+
+interface Stage {
+  name: string;
+  /** Left edge and width in art pixels — also drives the caption alignment. */
+  x: number;
+  w: number;
+  draw: (x: number) => void;
+}
+
+const STAGES: Stage[] = [
+  {
+    name: "sources",
+    x: 2,
+    w: 13,
+    /* Three offset cards, front-most drawn last. */
+    draw: (x) => {
+      for (const [dx, dy] of [
+        [4, 2],
+        [2, 5],
+        [0, 8],
+      ] as const) {
+        box(grid, x + dx, dy, 9, 5, "ink", "fill");
+        fillRect(grid, x + dx + 2, dy + 2, 5, 1, "gold");
+      }
+    },
+  },
+  {
+    name: "pipelines",
+    x: 27,
+    w: 15,
+    /* Three inlets into a manifold, one thicker line out. */
+    draw: (x) => {
+      for (const y of [3, 7, 11]) fillRect(grid, x, y, 6, 2, "ink");
+      fillRect(grid, x + 6, 3, 2, 10, "ink");
+      box(grid, x + 8, 6, 7, 4, "ink", "violet");
+    },
+  },
+  {
+    name: "warehouse",
+    x: 55,
+    w: 11,
+    /* The standard stacked-platter store. */
+    draw: (x) => {
+      box(grid, x, 2, 11, 11, "ink", "fill");
+      for (const y of [4, 7, 10]) fillRect(grid, x + 1, y, 9, 1, "blue");
+    },
+  },
+  {
+    name: "models",
+    x: 81,
+    w: 15,
+    /* A bar chart on a baseline. */
+    draw: (x) => {
+      fillRect(grid, x, 12, 15, 1, "ink");
+      for (const [dx, y, h, key] of [
+        [1, 8, 4, "gold"],
+        [5, 5, 7, "orange"],
+        [9, 7, 5, "gold"],
+        [12, 3, 9, "orange"],
+      ] as const) {
+        fillRect(grid, x + dx, y, 3, h, key);
+      }
+    },
+  },
+  {
+    name: "agents",
+    x: 108,
+    w: 11,
+    /* Antenna, two eyes, a mouth, and a stand. */
+    draw: (x) =>
+      blit(
+        grid,
+        [
+          "....o......",
+          "....#......",
+          "###########",
+          "#=========#",
+          "#=oo===oo=#",
+          "#=========#",
+          "#==#####==#",
+          "###########",
+          "...#...#...",
+          "..#######..",
+        ],
+        x,
+        3,
+        { ...BASE, o: "gold" },
+      ),
+  },
+  {
+    name: "answers",
+    x: 134,
+    w: 15,
+    /* Lines of text in a bubble with a tail. */
+    draw: (x) =>
+      blit(
+        grid,
+        [
+          "###############",
+          "#=============#",
+          "#=ooooo==ooo==#",
+          "#=============#",
+          "#=ooo==ooooo==#",
+          "#=============#",
+          "#=ooooooo=====#",
+          "###############",
+          ".##............",
+          ".#.............",
+        ],
+        x,
+        3,
+        { ...BASE, o: "blue" },
+      ),
+  },
+];
+
+for (const s of STAGES) s.draw(s.x);
+
+/* Sparkles trailing off the answer. */
+const SPARK = ["..*..", "..*..", "*****", "..*..", "..*.."];
+for (const [x, y] of [
+  [154, 4],
+  [162, 9],
+  [168, 2],
+] as const) {
+  blit(grid, SPARK, x, y, { "*": "gold" });
+}
+
+/* The rail, dashed so it reads as motion without any animation, plus a packet
+   riding it in each gap between stages. */
+for (let x = 2; x < W - 2; x++) {
+  if (x % 4 < 2) setPx(grid, x, RAIL, "rail");
+}
+for (let i = 0; i < STAGES.length - 1; i++) {
+  const gapMid = Math.round(
+    (STAGES[i].x + STAGES[i].w + STAGES[i + 1].x) / 2 - 1.5,
+  );
+  for (let dy = 0; dy < 3; dy++) {
+    for (let dx = 0; dx < 3; dx++) {
+      setPx(grid, gapMid + dx, RAIL - 3 + dy, dx === 1 && dy === 1 ? "orange" : "ink");
+    }
+  }
+}
+
+const layers = paths(grid);
+
+/* Each label's centre as a percentage of the band's width, straight off the
+   sprite geometry above. */
+const labels = STAGES.map((s) => ({
+  name: s.name,
+  pct: ((s.x + s.w / 2) / W) * 100,
+}));
+---
+
+<figure class="pixel-pipeline">
+  <svg viewBox={`0 0 ${W} ${H}`} role="presentation" aria-hidden="true">
+    {layers.map((l) => <path d={l.d} class={`pp-${l.key}`} />)}
+  </svg>
+
+  {/* Names the stages in order, which is also the shortest statement of what the
+      work is. Absolutely positioned so each sits under its own sprite; below `sm`
+      there isn't room for six tracked-out labels in a row, so it falls back to a
+      plain wrapped list. */}
+  <figcaption>
+    <div class="relative mt-3 hidden h-4 sm:block">
+      {
+        labels.map((l) => (
+          <span
+            class="label absolute -translate-x-1/2 whitespace-nowrap"
+            style={`left:${l.pct.toFixed(2)}%`}>
+            {l.name}
+          </span>
+        ))
+      }
+    </div>
+    <div class="mt-3 flex flex-wrap gap-x-3 gap-y-1 sm:hidden">
+      {
+        labels.map((l, i) => (
+          <>
+            {i > 0 && <span class="text-[0.625rem] text-ink-3/50">→</span>}
+            <span class="label">{l.name}</span>
+          </>
+        ))
+      }
+    </div>
+  </figcaption>
+</figure>
+
+<style>
+  /* The sunset's palette, so the two bands read as one pair rather than two
+     unrelated illustrations. Deepened in dark mode for the same reason it is
+     there — saturated mid-tones glare against a near-black page. */
+  .pixel-pipeline {
+    --pp-violet: #7b5590;
+    --pp-blue: #5a7fa8;
+    --pp-orange: #c26a41;
+    --pp-gold: #d99a56;
+  }
+
+  :global(html[data-theme="dark"]) .pixel-pipeline {
+    --pp-violet: #6b4a80;
+    --pp-blue: #6d8fb5;
+    --pp-orange: #b5623a;
+    --pp-gold: #c98d4d;
+  }
+
+  .pixel-pipeline svg {
+    display: block;
+    width: 100%;
+    /* height:auto so the viewBox aspect sets the height and the art pixels stay
+       square. A fixed height stretched them into rectangles. */
+    height: auto;
+    shape-rendering: crispEdges;
+  }
+
+  .pp-ink {
+    fill: var(--color-ink);
+  }
+  .pp-fill {
+    fill: var(--color-paper-2);
+  }
+  .pp-rail {
+    fill: var(--color-rule-2);
+  }
+  .pp-violet {
+    fill: var(--pp-violet);
+  }
+  .pp-blue {
+    fill: var(--pp-blue);
+  }
+  .pp-orange {
+    fill: var(--pp-orange);
+  }
+  .pp-gold {
+    fill: var(--pp-gold);
+  }
+</style>

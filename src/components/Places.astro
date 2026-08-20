@@ -9,20 +9,30 @@ import { experience } from "../data/site";
  * name set in the display serif. The fallback is the design, not a broken state,
  * so this works before any logo files are added.
  */
-const places: { company: string; years: string[]; locations: string[]; logo?: string }[] = [];
+const places: {
+  company: string;
+  years: string[];
+  locations: string[];
+  logo?: string;
+  mono: boolean;
+}[] = [];
 
 for (const job of experience) {
   const existing = places.find((p) => p.company === job.company);
   if (existing) {
     existing.years.push(job.years);
     if (!existing.locations.includes(job.location)) existing.locations.push(job.location);
-    existing.logo ??= job.logo;
+    if (!existing.logo && job.logo) {
+      existing.logo = job.logo;
+      existing.mono = job.logoMono !== false;
+    }
   } else {
     places.push({
       company: job.company,
       years: [job.years],
       locations: [job.location],
       logo: job.logo,
+      mono: job.logoMono !== false,
     });
   }
 }
@@ -35,22 +45,29 @@ for (const job of experience) {
         class="flex flex-col justify-between gap-4"
         data-reveal
         style={`--reveal-delay:${i * 80}ms`}>
-        <div class="flex h-9 items-center">
-          {p.logo ? (
+        {/* A logo path can be set before the file exists, so the <img> carries an
+            onerror that hides it. The name is always rendered underneath now, so
+            there's nothing to reveal as a fallback — a missing file just leaves the
+            name, which is what the fallback used to do anyway. */}
+        {/* Wordmarks are capped on BOTH axes rather than given a single height. aws
+            is 1.7:1 and acer is 4.2:1, so one shared height made acer three times
+            the width of aws — equal heights are not equal presence. Capping width
+            too lets aws use the full height while acer is held back by its width. */}
+        <div class="flex h-20 items-center">
+          {p.logo && (
             <img
               src={p.logo}
-              alt={p.company}
-              height="28"
-              class="h-7 w-auto opacity-80"
+              alt=""
+              class:list={[p.mono ? "logo-mark max-h-12 max-w-[150px]" : "h-20 w-auto opacity-90"]}
               loading="lazy"
               decoding="async"
+              onerror="this.setAttribute('hidden','');"
             />
-          ) : (
-            <span class="display text-[1.375rem] leading-none text-ink">{p.company}</span>
           )}
         </div>
         <div class="border-t border-rule pt-3">
-          <p class="text-[0.8125rem] text-ink-2">{p.locations.join(" · ")}</p>
+          <p class="display text-[1.125rem] leading-snug text-ink">{p.company}</p>
+          <p class="mt-1.5 text-[0.8125rem] text-ink-2">{p.locations.join(" · ")}</p>
           <p class="mt-0.5 text-[0.8125rem] text-ink-3">{p.years.reverse().join(" · ")}</p>
         </div>
       </li>

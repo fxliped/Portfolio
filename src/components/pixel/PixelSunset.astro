@@ -1,0 +1,166 @@
+---
+/**
+ * 8-bit sunset band. Generated at build time, not hand-drawn: sky bands with an
+ * ordered dither between them, a striped sun, a dithered reflection, and a
+ * ridge line. Deterministic, so the emitted SVG is byte-identical each build.
+ *
+ * Sits above the footer as the page's closing image.
+ */
+import { makeGrid, disc, dither, paths, setPx } from "../../lib/pixel";
+
+/* The band's on-screen height is set by the viewBox aspect, because the art
+   pixels have to stay square — so making it thinner means MORE pixels across and
+   fewer down, not a shorter CSS height. 176×22 renders ~160px tall at full
+   width, against ~280px for the squarer 128×28 this replaced. */
+const W = 176;
+const H = 22;
+const HORIZON = 15;
+
+/* Sun low and right of centre, mostly above the waterline. */
+const SUN_X = 118;
+const SUN_Y = 11;
+const SUN_R = 5;
+
+const grid = makeGrid(W, H);
+
+/**
+ * Blend two palette keys at a row. Only the middle of a transition is stippled;
+ * outside that window the row is a solid colour. Dithering every row looks
+ * barely different and triples the emitted path data, because a stippled row has
+ * no runs longer than one cell.
+ */
+function band(x: number, y: number, frac: number, a: string, b: string): string {
+  if (frac <= 0.3) return a;
+  if (frac >= 0.7) return b;
+  return dither(x, y, (frac - 0.3) / 0.4) ? b : a;
+}
+
+/* --- Sky: four bands, dithered into each other ------------------------------
+   `t` walks 0 → 1 down to the horizon; scaling it by (bands - 1) gives a band
+   index plus a fractional blend. */
+const BANDS = ["sky1", "sky2", "sky3", "sky4"];
+for (let y = 0; y < HORIZON; y++) {
+  const pos = (y / (HORIZON - 1)) * (BANDS.length - 1);
+  const i = Math.min(BANDS.length - 2, Math.floor(pos));
+  for (let x = 0; x < W; x++) {
+    setPx(grid, x, y, band(x, y, pos - i, BANDS[i], BANDS[i + 1]));
+  }
+}
+
+/* --- Sun -------------------------------------------------------------------
+   Drawn as a disc, then every third row below its centre is knocked back to the
+   sky behind it. That banding is the detail that makes a sunset read as 8-bit
+   rather than as a plain circle. */
+disc(grid, SUN_X, SUN_Y, SUN_R, "sun", 1, HORIZON - 1);
+for (let y = SUN_Y + 1; y < HORIZON; y++) {
+  if ((y - SUN_Y) % 3 !== 0) continue;
+  for (let x = SUN_X - SUN_R - 1; x <= SUN_X + SUN_R + 1; x++) {
+    if (grid[y]?.[x] === "sun") setPx(grid, x, y, "sky4");
+  }
+}
+
+/* --- Ridge line ------------------------------------------------------------
+   Two overlapping peaks from a fixed cosine sum. Cheap, and it reads as hills
+   rather than as noise. */
+for (let x = 0; x < W; x++) {
+  const a = 3 * Math.cos((x / W) * Math.PI * 2 - 0.6);
+  const b = 2 * Math.cos((x / W) * Math.PI * 6 + 1.2);
+  const top = Math.round(HORIZON - 2 + a * 0.6 + b * 0.5);
+  for (let y = Math.max(0, top); y < HORIZON; y++) setPx(grid, x, y, "land");
+}
+
+/* --- Water -----------------------------------------------------------------
+   Two tones blended by depth, then a reflection column under the sun that
+   breaks up as it recedes. */
+for (let y = HORIZON; y < H; y++) {
+  const depth = (y - HORIZON) / (H - HORIZON - 1);
+  for (let x = 0; x < W; x++) {
+    setPx(grid, x, y, band(x, y, depth, "sea1", "sea2"));
+  }
+}
+for (let y = HORIZON; y < H; y++) {
+  const depth = (y - HORIZON) / (H - HORIZON - 1);
+  const spread = Math.round(SUN_R * (0.4 + depth * 1.5));
+  for (let x = SUN_X - spread; x <= SUN_X + spread; x++) {
+    const edge = 1 - Math.abs(x - SUN_X) / (spread + 1);
+    if (dither(x, y, edge * (1 - depth * 0.8))) setPx(grid, x, y, "glint");
+  }
+}
+
+const layers = paths(grid);
+---
+
+<div class="pixel-sunset" aria-hidden="true">
+  <svg viewBox={`0 0 ${W} ${H}`} role="presentation">
+    {layers.map((l) => <path d={l.d} class={`px-${l.key}`} />)}
+  </svg>
+</div>
+
+<style>
+  /* The palette lives here rather than in global tokens: it's one illustration,
+     and nothing else on the site should be able to reach these hues. A sunset
+     stays a sunset in both themes — dark mode only deepens it so the band
+     doesn't glare on a near-black page. */
+  .pixel-sunset {
+    --px-sky1: #3f3168;
+    --px-sky2: #7b5590;
+    --px-sky3: #c26a41;
+    --px-sky4: #e2a463;
+    --px-sun: #f6ce7d;
+    --px-land: #241d2f;
+    --px-sea1: #2b2440;
+    --px-sea2: #191527;
+    --px-glint: #d9924f;
+  }
+
+  :global(html[data-theme="dark"]) .pixel-sunset {
+    --px-sky1: #241c3d;
+    --px-sky2: #573a6b;
+    --px-sky3: #97502f;
+    --px-sky4: #bb8149;
+    --px-sun: #dcb063;
+    --px-land: #0b0913;
+    --px-sea1: #171326;
+    --px-sea2: #0c0a15;
+    --px-glint: #a86c39;
+  }
+
+  .pixel-sunset svg {
+    display: block;
+    width: 100%;
+    /* height:auto, not a fixed band height. The viewBox aspect then decides the
+       height, which keeps every art pixel square — a fixed height stretched them
+       into wide rectangles and the sky bands came out visibly squashed. */
+    height: auto;
+    /* Nearest-neighbour, so no browser smooths the pixel edges. */
+    shape-rendering: crispEdges;
+  }
+
+  .px-sky1 {
+    fill: var(--px-sky1);
+  }
+  .px-sky2 {
+    fill: var(--px-sky2);
+  }
+  .px-sky3 {
+    fill: var(--px-sky3);
+  }
+  .px-sky4 {
+    fill: var(--px-sky4);
+  }
+  .px-sun {
+    fill: var(--px-sun);
+  }
+  .px-land {
+    fill: var(--px-land);
+  }
+  .px-sea1 {
+    fill: var(--px-sea1);
+  }
+  .px-sea2 {
+    fill: var(--px-sea2);
+  }
+  .px-glint {
+    fill: var(--px-glint);
+  }
+</style>

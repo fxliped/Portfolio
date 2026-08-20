@@ -6,7 +6,15 @@ org: "Amazon Web Services"
 period: "May 2026 — Present"
 order: 1
 featured: true
-stack: ["Python", "Airflow", "Tableau REST API", "Amazon S3", "Amazon Bedrock", "pytest"]
+stack:
+  [
+    "Python",
+    "Airflow",
+    "Tableau REST API",
+    "Amazon S3",
+    "Amazon Bedrock",
+    "pytest",
+  ]
 figures:
   - diagram: "pipeline"
     caption: "Extract and transform are pure — no network, no clock, no cloud SDK — so the layers that decide correctness are testable without credentials."
@@ -17,15 +25,12 @@ metrics:
     label: "Increase in queryable data"
   - value: "13%"
     label: "Agent accuracy gain from the data model"
-  - value: "4,000+"
+  - value: "5,000+"
     label: "People reached by self-serve analytics"
 summary: "An AI platform couldn't read the BI estate that held the org's operational knowledge. I built the ETL that turns 3,000+ Tableau workbooks into a knowledge base it can ground on."
 links: []
 images: []
 ---
-
-{/* REVIEW: numbers match your resume exactly. "The hard part" and "What I'd do
-    differently" are my inference about how the work went — rewrite in your voice. */}
 
 ## Context
 
@@ -84,7 +89,7 @@ unrecorded is where the expensive incidents hide.
 
 The agent answers questions about any dashboard — what it measures, how a field is
 calculated, which tables feed it — with a citation. Queryable data up 45%, accuracy up 13%,
-self-serve analytics reaching 4,000+ people. Refreshes are incremental and unattended.
+self-serve analytics reaching 5,000+ people. Refreshes are incremental and unattended.
 
 ## What I'd do differently
 

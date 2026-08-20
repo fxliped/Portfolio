@@ -1,20 +1,39 @@
 ---
 interface Props {
-  /** Square-ish photo in public/. Nothing renders until this file exists. */
+  /** Photo in public/. Nothing renders until this file exists. */
   src?: string;
   alt: string;
-  /** Horizontal resolution in characters. Higher reads sharper and costs more. */
+  /**
+   * Horizontal resolution in characters. Counter-intuitively, LOWER often reads
+   * better: the glyph size is derived from the cell size, so too many columns in a
+   * narrow box yields a 4px font and the characters stop being legible at all.
+   * Keep roughly 5–6px per column.
+   */
   cols?: number;
+  /**
+   * Crop centre as a 0–1 fraction of the photo, and how much of the shorter side
+   * to keep. Every cell not on the face is a cell the face doesn't get, so a photo
+   * with headroom or torso in frame needs these set.
+   */
+  focusX?: number;
+  focusY?: number;
+  zoom?: number;
   class?: string;
 }
-const { src = "/portrait.jpg", alt, cols = 96, class: className = "" } = Astro.props;
+const {
+  src = "/portrait-web.jpg",
+  alt,
+  cols = 72,
+  focusX = 0.5,
+  focusY = 0.5,
+  zoom = 0.85,
+  class: className = "",
+} = Astro.props;
 ---
 
-{/* A real photo, resampled into characters on a canvas. Three reasons over an
-    <img>: it inherits the ink colour so it re-themes with everything else, it
-    sidesteps the "which crop, how big" problem a literal headshot creates on a
-    typographic page, and it's the one genuinely interactive thing here — hover
-    resolves more detail.
+{/* A real photo resampled into characters on a canvas, and the one genuinely
+    interactive thing on the site: the glyphs churn on a stagger like a live feed,
+    and the palette cools from blue to warm under the cursor.
 
     Starts `hidden` and is only revealed once the photo decodes, so the layout is
     identical whether or not the file exists. No photo, no empty box. */}
@@ -23,20 +42,81 @@ const { src = "/portrait.jpg", alt, cols = 96, class: className = "" } = Astro.p
   data-ascii
   data-ascii-src={src}
   data-ascii-cols={cols}
+  data-ascii-fx={focusX}
+  data-ascii-fy={focusY}
+  data-ascii-zoom={zoom}
   hidden>
   <canvas data-ascii-canvas role="img" aria-label={alt} class="block h-auto w-full"></canvas>
 </figure>
 
 <style>
   .ascii-portrait canvas {
-    /* Crisp edges on the character grid rather than a soft upscale. */
     image-rendering: -webkit-optimize-contrast;
+    cursor: crosshair;
   }
 </style>
 
 <script>
-  /** Sparse → dense. ASCII only: anything wider than one cell breaks the grid. */
-  const RAMP = " .`:-=+*ox%#@";
+  /**
+   * Glyphs grouped by visual weight, sparse → dense.
+   *
+   * Buckets rather than one character per level, so a cell can swap glyph without
+   * changing tone — that's what makes the churn read as a live readout instead of
+   * as the image flickering. A digit leads every bucket it can, so the portrait
+   * reads as numbers without any level lying about its density.
+   *
+   * Every glyph in a bucket has to carry about the SAME ink coverage, and an
+   * earlier version broke that — one bucket held `0` next to `c`, so a cell could
+   * swap between heavy and light without its tone changing. The face came out
+   * washed-out and noisy for reasons that looked like a maths bug and weren't.
+   */
+  const LEVELS = [
+    " ",
+    /* Blank, not punctuation. With one flat ink there is no opacity left to push
+       the faintest cells back, so a level of stray dots reads as loud as the face.
+       Giving the wall nothing to draw is what separates the subject now. */
+    " ",
+    ".`'",
+    ",:;",
+    "-~_",
+    "1il|",
+    "7tf+",
+    "3czx",
+    "2suo",
+    "50ay",
+    "689&",
+    "@#MW",
+  ];
+
+/**
+   * No grading of any kind: one flat ink, one opacity, every character identical.
+   *
+   * The picture is carried entirely by WHICH character each cell gets — that's what
+   * ASCII art is, and it's the version that stops looking like a filter applied to
+   * a photo. Earlier passes graded by a four-stop colour ramp, then by per-level
+   * opacity; both still read as an effect sitting on top of a face rather than a
+   * drawing of one. Ink is a custom property, so this also re-themes for free.
+   */
+  const ALPHA = 0.82;
+
+  /**
+   * Hex → "r,g,b". Canvas `fillStyle` needs a concrete colour string, and it does
+   * not accept `color-mix()`, so the ink custom property has to be parsed here to
+   * build rgba() values.
+   */
+  function inkChannels(hex: string): string {
+    const h = hex.replace("#", "").trim();
+    const full =
+      h.length === 3
+        ? h
+            .split("")
+            .map((c) => c + c)
+            .join("")
+        : h;
+    const n = parseInt(full, 16);
+    if (Number.isNaN(n) || full.length !== 6) return "20,22,28";
+    return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`;
+  }
 
   function setup(fig: HTMLElement) {
     const canvas = fig.querySelector<HTMLCanvasElement>("[data-ascii-canvas]");
@@ -46,90 +126,208 @@ const { src = "/portrait.jpg", alt, cols = 96, class: className = "" } = Astro.p
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const cols = Number(fig.dataset.asciiCols ?? 96);
-    const img = new Image();
-    let cells: { t: number }[][] | null = null;
-    let rows = 0;
-    let hovering = false;
+    const cols = Number(fig.dataset.asciiCols ?? 72);
+    const fx = Number(fig.dataset.asciiFx ?? 0.5);
+    const fy = Number(fig.dataset.asciiFy ?? 0.5);
+    const zoom = Number(fig.dataset.asciiZoom ?? 0.85);
 
-    /** Sample the photo once into a cols × rows grid of 0–1 luminance. */
+    const img = new Image();
+    /** Per-cell density level index into LEVELS. */
+    let level: number[][] | null = null;
+    /** Per-cell churn offset, so cells don't all swap glyph on the same tick. */
+    let phase: number[][] = [];
+    let rows = 0;
+    /** 0 = rest palette, 1 = hover palette. Tweened, not switched. */
+    let mix = 0;
+    let frame = 0;
+
     function sample() {
-      const aspect = img.naturalHeight / img.naturalWidth;
+      /* Square crop around the focus point, clamped inside the frame. */
+      const side = Math.min(img.naturalWidth, img.naturalHeight) * zoom;
+      const sx = Math.max(0, Math.min(img.naturalWidth - side, fx * img.naturalWidth - side / 2));
+      const sy = Math.max(0, Math.min(img.naturalHeight - side, fy * img.naturalHeight - side / 2));
+
       /* Monospace cells are about 0.6 as wide as they are tall, so the row count
          has to be scaled down or the portrait comes out stretched vertically. */
-      rows = Math.max(8, Math.round(cols * aspect * 0.55));
+      rows = Math.max(8, Math.round(cols * 0.55));
+
+      /* Downscale in halving steps rather than one jump.
+         `drawImage` collapsing ~830px to 72 in a single call samples too coarsely:
+         it loses exactly the local contrast the unsharp pass below depends on, and
+         the portrait came out visibly flatter in the browser than the same maths
+         did offline. Repeated halving averages every source pixel in properly. */
+      let cur = document.createElement("canvas");
+      cur.width = Math.round(side);
+      cur.height = Math.round(side);
+      const curCtx = cur.getContext("2d");
+      if (!curCtx) return false;
+      curCtx.drawImage(img, sx, sy, side, side, 0, 0, cur.width, cur.height);
+
+      while (Math.floor(cur.width / 2) > cols) {
+        const next = document.createElement("canvas");
+        next.width = Math.floor(cur.width / 2);
+        next.height = Math.floor(cur.height / 2);
+        const nctx = next.getContext("2d");
+        if (!nctx) break;
+        nctx.imageSmoothingEnabled = true;
+        nctx.imageSmoothingQuality = "high";
+        nctx.drawImage(cur, 0, 0, next.width, next.height);
+        cur = next;
+      }
 
       const off = document.createElement("canvas");
       off.width = cols;
       off.height = rows;
       const octx = off.getContext("2d", { willReadFrequently: true });
       if (!octx) return false;
-      octx.drawImage(img, 0, 0, cols, rows);
+      octx.imageSmoothingEnabled = true;
+      octx.imageSmoothingQuality = "high";
+      octx.drawImage(cur, 0, 0, cols, rows);
 
       let data: Uint8ClampedArray;
       try {
         data = octx.getImageData(0, 0, cols, rows).data;
       } catch {
-        /* A cross-origin photo taints the canvas and blocks the read. Local
-           files in public/ never hit this. */
+        /* A cross-origin photo taints the canvas and blocks the read. Local files
+           in public/ never hit this. */
         return false;
       }
 
-      cells = [];
+      const lum: number[][] = [];
       for (let y = 0; y < rows; y++) {
-        const row: { t: number }[] = [];
+        const row: number[] = [];
         for (let x = 0; x < cols; x++) {
           const i = (y * cols + x) * 4;
-          const lum = (0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]) / 255;
-          row.push({ t: lum });
+          row.push((0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]) / 255);
         }
-        cells.push(row);
+        lum.push(row);
+      }
+
+      /* Local contrast. Global brightness in a photo is dominated by the lighting,
+         not the face, so a plain stretch can spend most of the ramp on the
+         backdrop. Subtracting a heavily blurred copy keeps brow, socket and the
+         edge of a smile. */
+      const radius = Math.max(2, Math.round(cols / 8));
+      const blurred: number[][] = [];
+      for (let y = 0; y < rows; y++) {
+        const row: number[] = [];
+        for (let x = 0; x < cols; x++) {
+          let sum = 0;
+          let n = 0;
+          for (let dy = -radius; dy <= radius; dy++) {
+            const yy = y + dy;
+            if (yy < 0 || yy >= rows) continue;
+            for (let dx = -radius; dx <= radius; dx++) {
+              const xx = x + dx;
+              if (xx < 0 || xx >= cols) continue;
+              sum += lum[yy][xx];
+              n++;
+            }
+          }
+          row.push(sum / n);
+        }
+        blurred.push(row);
+      }
+
+      let lo = 1;
+      let hi = 0;
+      for (const row of lum) {
+        for (const v of row) {
+          if (v < lo) lo = v;
+          if (v > hi) hi = v;
+        }
+      }
+      const span = hi - lo;
+
+      /* Stretch the true tone across the full range, THEN add a signed detail term
+         — an unsharp mask, not a blend. Cross-fading toward the high-pass image
+         drags every cell toward mid-grey, which costs the deep darks and pale
+         highlights the portrait needs. */
+      level = [];
+      phase = [];
+      const cx = (cols - 1) / 2;
+      const cy = (rows - 1) / 2;
+      const rmax = Math.hypot(cx, cy);
+
+      for (let y = 0; y < rows; y++) {
+        const lrow: number[] = [];
+        const prow: number[] = [];
+        for (let x = 0; x < cols; x++) {
+          const base = span > 0.05 ? (lum[y][x] - lo) / span : lum[y][x];
+          /* No S-curve, and a strong detail term. The S-curve that used to sit here
+             crushed the dark end: hair, shirt and the shadowed edge of the jaw all
+             collapsed onto the same two densest glyphs, so the head read as one
+             solid helmet. Removing it and leaning on local contrast instead is what
+             makes the eyes, nose and mouth resolve as separate features. */
+          const detail = (lum[y][x] - blurred[y][x]) * 2.6;
+          const v = Math.max(0, Math.min(1, base + detail));
+
+          /* Darker photo pixels get more ink, in BOTH themes. Flipping this for
+             dark mode is wrong for a portrait: the brightest thing in the frame is
+             the wall behind him, so inverting made the wall solid and his face
+             empty — a negative of the subject. Theme changes the COLOUR of a level,
+             not which end of the tonal range earns it, and the dark ramp already
+             brightens as it densifies. */
+          let t = 1 - v;
+
+          /* Corner fade, so the frame gives the subject an outline even when the
+             backdrop doesn't. Gentle: a hard vignette eats the jaw and hairline,
+             which are the edges that make a face recognisable. */
+          const d = Math.hypot(x - cx, y - cy) / rmax;
+          const e = Math.max(0, Math.min(1, (d - 0.7) / 0.3));
+          t *= 1 - e * e * (3 - 2 * e) * 0.55;
+
+          lrow.push(Math.min(LEVELS.length - 1, Math.max(0, Math.round(t * (LEVELS.length - 1)))));
+          prow.push((x * 7 + y * 13) % 16);
+        }
+        level.push(lrow);
+        phase.push(prow);
       }
       return true;
     }
 
     function draw() {
-      if (!cells || !ctx || !canvas) return;
+      if (!level || !ctx || !canvas) return;
 
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const cssWidth = canvas.clientWidth || fig.clientWidth || 320;
       const cell = cssWidth / cols;
       const cssHeight = cell * rows * 1.82; // undo the 0.55 row squeeze
 
-      canvas.width = Math.round(cssWidth * dpr);
-      canvas.height = Math.round(cssHeight * dpr);
-      canvas.style.height = `${cssHeight}px`;
+      if (canvas.width !== Math.round(cssWidth * dpr)) {
+        canvas.width = Math.round(cssWidth * dpr);
+        canvas.height = Math.round(cssHeight * dpr);
+        canvas.style.height = `${cssHeight}px`;
+      }
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, cssWidth, cssHeight);
 
-      const styles = getComputedStyle(document.documentElement);
-      const ink = styles.getPropertyValue("--color-ink").trim() || "#14161c";
-      const accent = styles.getPropertyValue("--color-accent").trim() || ink;
-      /* On a dark page the characters ARE the light, so dense has to mean bright.
-         Without this flip the portrait renders as its own negative. */
-      const isDark = document.documentElement.dataset.theme === "dark";
+      const ink = inkChannels(
+        getComputedStyle(document.documentElement).getPropertyValue("--color-ink") || "#14161c",
+      );
 
       const rowHeight = cssHeight / rows;
-      ctx.font = `${(cell * 1.9).toFixed(2)}px ui-monospace, "SF Mono", Menlo, monospace`;
+      /* A monospace advance is about 0.6 of its font size, so ~1.6 cells makes one
+         glyph occupy one cell. Larger and neighbours overlap, fusing each row into
+         a continuous line — the portrait then reads as scan lines, not characters. */
+      ctx.font = `${(cell * 1.58).toFixed(2)}px ui-monospace, "SF Mono", Menlo, monospace`;
       ctx.textBaseline = "middle";
 
-      /* Hover widens the ramp and lifts the gamma — the same photo, resolved
-         further. Cheap, and it's the interaction rather than a decoration. */
-      const gamma = hovering ? 0.78 : 1.0;
-      const depth = hovering ? RAMP.length : RAMP.length - 3;
+      /* One fill for the whole portrait. Hover nudges it a touch more solid — that's
+         the entire interaction now, on top of the glyph churn. */
+      ctx.fillStyle = `rgba(${ink},${Math.min(1, ALPHA + 0.15 * mix).toFixed(3)})`;
 
       for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
-          const lum = cells[y][x].t;
-          const t = Math.pow(isDark ? lum : 1 - lum, gamma);
-          const idx = Math.min(depth - 1, Math.max(0, Math.round(t * (depth - 1))));
-          const ch = RAMP[idx];
-          if (ch === " ") continue;
-          /* The densest few characters take the accent — a little colour landing
-             on the darkest part of the face rather than over the whole thing. */
-          ctx.fillStyle = idx >= depth - 2 ? accent : ink;
-          ctx.fillText(ch, x * cell, y * rowHeight + rowHeight / 2);
+          const idx = level[y][x];
+          const bucket = LEVELS[idx];
+          if (bucket === " ") continue;
+          /* Divided by 4 so each cell holds a glyph for four ticks; the phase
+             spreads those changes out, so about a quarter of the frame turns over
+             at a time rather than the whole thing strobing. */
+          const g = bucket[Math.floor((frame + phase[y][x]) / 4) % bucket.length];
+          ctx.fillText(g, x * cell, y * rowHeight + rowHeight / 2);
         }
       }
     }
@@ -147,21 +345,60 @@ const { src = "/portrait.jpg", alt, cols = 96, class: className = "" } = Astro.p
       };
 
       new ResizeObserver(redraw).observe(fig);
+      /* The level map is theme-independent now, so a theme change only needs a
+         redraw to pick up the other colour ramp. */
       new MutationObserver(redraw).observe(document.documentElement, {
         attributes: true,
         attributeFilter: ["data-theme"],
       });
 
-      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        fig.addEventListener("pointerenter", () => {
-          hovering = true;
-          redraw();
-        });
-        fig.addEventListener("pointerleave", () => {
-          hovering = false;
-          redraw();
-        });
-      }
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+      /* Churn loop. Gated on a wall-clock interval rather than running every frame:
+         at ~9fps it reads as a data feed, and it costs a fraction of the work.
+         Paused entirely while the portrait is off-screen. */
+      let visible = true;
+      let timer = 0;
+      let interval = 110;
+
+      const tick = () => {
+        if (!visible) return;
+        frame++;
+        draw();
+      };
+      const start = () => {
+        clearInterval(timer);
+        timer = window.setInterval(tick, interval);
+      };
+      start();
+
+      new IntersectionObserver(
+        (entries) => {
+          visible = entries[0].isIntersecting;
+        },
+        { rootMargin: "120px" },
+      ).observe(fig);
+
+      /* Tween `mix` toward its target rather than snapping: a hard cut between two
+         full-frame palettes reads as a glitch. Hover also speeds the churn up. */
+      let tween = 0;
+      const glide = (target: number, ms: number) => {
+        interval = ms;
+        start();
+        cancelAnimationFrame(tween);
+        const from = mix;
+        const t0 = performance.now();
+        const step = (now: number) => {
+          const p = Math.min((now - t0) / 260, 1);
+          mix = from + (target - from) * (1 - Math.pow(1 - p, 3));
+          draw();
+          if (p < 1) tween = requestAnimationFrame(step);
+        };
+        tween = requestAnimationFrame(step);
+      };
+
+      fig.addEventListener("pointerenter", () => glide(1, 55));
+      fig.addEventListener("pointerleave", () => glide(0, 110));
     };
     img.onerror = () => {
       /* No photo in public/ yet. Leave it hidden; the page is unchanged. */

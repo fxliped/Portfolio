@@ -1,6 +1,7 @@
 ---
 import { lab } from "../data/site";
 import Icon from "./Icon.astro";
+import LabFigure from "./pixel/LabFigure.astro";
 
 /**
  * Three panels in a row on desktop, not the 2×2 the case studies use — a wider,
@@ -17,24 +18,19 @@ import Icon from "./Icon.astro";
         style={`--reveal-delay:${i * 70}ms`}>
         <div class="h-[3px] w-full bg-accent/70" aria-hidden="true" />
 
-        {p.preview && (
-          <div class="overflow-hidden border-b border-rule bg-paper">
-            <img
-              src={p.preview.src}
-              alt={p.preview.alt}
-              width={p.preview.width}
-              height={p.preview.height}
-              class="h-32 w-full object-cover sm:h-36"
-              loading="lazy"
-              decoding="async"
-            />
-          </div>
-        )}
-
         <div class="flex flex-1 flex-col p-6">
           <p class="label !text-accent">{p.lane}</p>
           <h3 class="display mt-3 text-[1.375rem] text-ink">{p.title}</h3>
-          <p class="mt-3 text-[0.9375rem] leading-relaxed text-ink-2">{p.blurb}</p>
+
+          {/* Between the title and the blurb: the figure then reads as an
+              illustration OF the thing just named, rather than as a banner you
+              scroll past before knowing what it belongs to. One per project, in the
+              same idiom as the band above the case studies. */}
+          <div class="my-5 border border-rule bg-paper px-3 py-2">
+            <LabFigure name={p.figure} />
+          </div>
+
+          <p class="text-[0.9375rem] leading-relaxed text-ink-2">{p.blurb}</p>
 
           <ul class="mt-auto flex flex-wrap gap-1.5 pt-6">
             {p.tags.map((t) => (

@@ -1,6 +1,50 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="5" fill="#14161c"/>
-  <text x="16" y="22.5" text-anchor="middle"
-        font-family="Georgia, 'Times New Roman', serif" font-size="17" font-weight="400"
-        fill="#faf9f6" letter-spacing="-0.5">FD</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"
+     aria-label="Felipe Duenas monogram">
+  <!--
+    Old English (Textura Quadrata) FD monogram on cream.
+
+    Hand-drawn paths, not type: an SVG favicon renders outside the page's font
+    stack, so a font-family of "Old English Text MT" silently falls back to a
+    plain serif almost everywhere.
+
+    Weight alone reads as a gothic sans. What makes it Textura is the nib:
+
+      1. Lozenge terminals that OVERHANG the stem on both sides, top and bottom —
+         the trace of a broad pen held at ~40°.
+      2. A diamond spur partway down the left of the stem.
+      3. Arms bevelled off at 45°, never cut vertically.
+      4. A lozenge set in the counter of the D as pure ornament.
+
+    A hairline off the F's arm and a second spur on the D were both dropped: at
+    16px they landed as isolated specks, and the D's spur was covered by the F
+    anyway. Detail that only resolves at 256px is a liability in a favicon.
+
+    Letters are authored on a ~100-unit em and centred and scaled by the group
+    transform, so nothing is re-plotted by hand to resize.
+    Bbox x 13→104, y 12→80, centre (58.5, 46).
+  -->
+  <rect width="64" height="64" rx="10" fill="#f6f1e4"/>
+  <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="9.25" fill="none"
+        stroke="#e3dac4" stroke-width="1.5"/>
+
+  <g fill="#14161c" transform="translate(32 32) scale(0.5) translate(-58.5 -46)">
+    <!-- ===== F ===== -->
+    <path d="M22 20 h9 v52 h-9 Z"/>
+    <path d="M15 20 L26.5 12 L38 20 L26.5 28 Z"/>
+    <path d="M14 72 L26.5 64 L39 72 L26.5 80 Z"/>
+    <!-- top arm and crossbar, both bevelled at 45° -->
+    <path d="M26 15 L52 15 L52 21 L44 29 L26 29 Z"/>
+    <path d="M26 41 L48 41 L48 46 L41 53 L26 53 Z"/>
+    <!-- left spur -->
+    <path d="M13 47 L22 41 L22 53 Z"/>
+
+    <!-- ===== D ===== -->
+    <path d="M65 20 h9 v52 h-9 Z"/>
+    <path d="M58 20 L69.5 12 L81 20 L69.5 28 Z"/>
+    <path d="M57 72 L69.5 64 L82 72 L69.5 80 Z"/>
+    <!-- angular bowl: flat top, bevelled shoulders, counter left open -->
+    <path d="M69 15 L93 15 L104 27 L104 59 L93 72 L69 72 L69 63 L90 63 L95 56 L95 31 L90 24 L69 24 Z"/>
+    <!-- ornamental lozenge in the counter -->
+    <path d="M78 43 L83 38 L88 43 L83 48 Z"/>
+  </g>
 </svg>
