@@ -1,7 +1,7 @@
 ---
 title: "Dashboards from a sentence, in four minutes"
 tagline: "Strands Agent + MCP tooling that builds dashboards from a prompt"
-role: "Architect — agent tooling and generation pipeline"
+role: "Architect: agent tooling and generation pipeline"
 org: "Amazon Web Services"
 period: "2026"
 order: 2
@@ -9,13 +9,13 @@ featured: true
 stack: ["Python", "Strands Agent", "MCP", "Tableau", "Redshift", "SQL"]
 figures:
   - diagram: "agent-graph"
-    caption: "Generation is a graph, not a prompt chain — so failed validation has a defined place to go instead of a retry loop that burns tokens and gives up."
+    caption: "Generation is a graph, not a prompt chain, so failed validation has a defined place to go instead of a retry loop that burns tokens and gives up."
 metrics:
   - value: "3 days → 4 min"
     label: "Median dashboard development time"
   - value: "15"
     label: "Features scoped with stakeholders"
-summary: "Reading dashboards was half the problem. I architected the agent tooling that turns a natural-language request into a context-specific dashboard — three days of work down to four minutes."
+summary: "Reading dashboards was half the problem. I architected the agent tooling that turns a natural-language request into a context-specific dashboard. Three days of work, down to four minutes."
 links: []
 images: []
 ---
@@ -25,7 +25,7 @@ images: []
 Once the knowledge base could describe every existing dashboard, planners asked the inverse:
 _can it just build me the one I need?_
 
-The manual path took about three days — not because the work was hard, but because it was
+The manual path took about three days, not because the work was hard but because it was
 serial. Find someone who knows the domain, agree on definitions, locate the right tables,
 build it, discover the definitions were subtly wrong, iterate.
 
@@ -35,19 +35,19 @@ A dashboard request is underspecified by nature. "Power utilization by site for 
 omits which utilization definition is meant, which tables are authoritative, and what the
 reader will decide from it.
 
-So this couldn't be text-to-SQL. It needed **grounded context** — real metric definitions,
-real table lineage, real precedent from dashboards that already existed — and the ability to
+So this couldn't be text-to-SQL. It needed **grounded context**: real metric definitions,
+real table lineage, real precedent from dashboards that already existed. It also needed to
 take dependent steps, checking its work between them.
 
 ## What I built
 
-**MCP servers as the tool boundary.** Each capability — search the knowledge base, resolve a
-metric, inspect a schema, validate a query, emit a spec — is an MCP tool with an explicit
-contract. That keeps them reusable across the platform's agents instead of welded to one
+**MCP servers as the tool boundary.** Every capability is an MCP tool with an explicit
+contract: search the knowledge base, resolve a metric, inspect a schema, validate a query,
+emit a spec. That keeps them reusable across the platform's agents instead of welded to one
 prompt, and independently testable.
 
 **Strands Agent for control flow.** Generation branches: resolve intent, gather context, draft,
-validate, repair, emit. A graph makes those states explicit — and the failure paths too.
+validate, repair, emit. A graph makes those states explicit, and the failure paths with them.
 
 **Grounding in the knowledge base from the first project**, so a new dashboard inherits the
 existing estate's definitions instead of inventing its own.
@@ -56,7 +56,7 @@ existing estate's definitions instead of inventing its own.
 and column it references has to exist in the real schema. And every metric has to match the
 definition already in the knowledge base. The first two only stop the output from being
 broken. The third stops it from being quietly wrong, which is the failure that actually costs
-something — a dashboard that renders cleanly and disagrees with the one next to it.
+something: a dashboard that renders cleanly and disagrees with the one next to it.
 
 **What comes out is a draft, not a published dashboard.** A person opens it, checks it, and
 publishes it themselves. That was a deliberate limit rather than a missing feature: the tool is
@@ -64,8 +64,8 @@ allowed to be wrong as long as being wrong stays cheap and visible. Nothing it p
 authoritative without someone saying so.
 
 To decide what to build I analyzed legacy dashboard usage in Redshift and worked the findings
-through with planning, infra and BI stakeholders — **15 high-value features** with named
-owners, which is why the tooling targeted the requests people actually made.
+through with planning, infra and BI stakeholders. That produced **15 high-value features**
+with named owners, which is why the tooling targeted the requests people actually made.
 
 ## The hard part
 
@@ -77,8 +77,8 @@ actually moved the output was going back to the knowledge base and getting the m
 definitions right.
 
 Obvious in hindsight. A generator grounded in a definition inherits that definition, mistakes
-included. Two dashboards disagreeing about what "utilization" means isn't an agent problem —
-it's a data problem, and you can't fix it from downstream with a better prompt.
+included. Two dashboards disagreeing about what "utilization" means isn't an agent problem.
+It's a data problem, and you can't fix it from downstream with a better prompt.
 
 ## Outcome
 
@@ -89,5 +89,5 @@ ask.
 ## What I'd do differently
 
 Version the generated specs from the start and treat output as a draft with provenance. The
-first questions people asked were "what changed?" and "why that table?" — both far easier to
+first questions people asked were "what changed?" and "why that table?", both far easier to
 answer if you designed for them up front.

@@ -35,10 +35,10 @@ export const site = {
   portraitPath: "/portrait-crop.jpg",
 
   currently:
-    "At AWS that means the data infrastructure and pipeline logic for a supply chain automation platform — along with the agentic work so the platform's agent doesn't just sound better, it drives results.",
+    "At AWS that means the data infrastructure and pipeline logic for a supply chain automation platform, along with the agentic work so the platform's agent doesn't just sound better, it drives results.",
 
   intro: [
-    "I'm a software engineer who specializes in data. At AWS that means the data infrastructure and pipeline logic for a supply chain automation platform — along with the agentic work so the platform's agent doesn't just sound better, it drives results.",
+    "I'm a software engineer who specializes in data. At AWS that means the data infrastructure and pipeline logic for a supply chain automation platform, along with the agentic work so the platform's agent doesn't just sound better, it drives results.",
   ],
 
   links: [
@@ -133,7 +133,7 @@ export const experience: Role[] = [
     location: "Seattle, WA",
     current: true,
     bullets: [
-      "The org's operational knowledge lived in 3,000+ Tableau dashboards that no software could read. I built the pipeline that turned them into something an AI agent can answer from — 45% more of the org's data became reachable, and the accuracy gain traced to the data, not the prompt.",
+      "The org's operational knowledge lived in 3,000+ Tableau dashboards that no software could read. I built the pipeline that turned them into something an AI agent can answer from. 45% more of the org's data became reachable, and the accuracy gain traced to the data, not the prompt.",
       "Then went the other direction: tooling on LangGraph and MCP that takes a sentence and gives back a dashboard. Three days of work, down to four minutes.",
     ],
     stack: ["Python", "Airflow", "Tableau", "Redshift", "LangGraph", "MCP"],
@@ -149,7 +149,7 @@ export const experience: Role[] = [
     location: "Los Angeles, CA",
     current: false,
     bullets: [
-      "Built an agent that plans and runs a whole analysis from a plain-language question — 71% task completion on the BIRD benchmark, eight points above GPT-4o.",
+      "Built an agent that plans and runs a whole analysis from a plain-language question. It completed 71% of BIRD benchmark tasks, eight points above GPT-4o.",
       "The interesting part was the harness that told us why it failed: 34 schemas, 120+ question types, and three architectural fixes worth +11% that we'd never have found from a pass/fail score.",
     ],
     stack: [
@@ -171,7 +171,7 @@ export const experience: Role[] = [
     current: false,
     bullets: [
       "Forecast data center power well enough to see what the old error band hid: 1.9% MAE against a 6.3% baseline, which surfaced the under-usage behind a $400K savings initiative across 12 availability zones.",
-      "Also did the plumbing — 500M+ daily telemetry events through dbt and Redshift, and a weekly report that took six hours now takes thirty minutes.",
+      "Also did the plumbing: 500M+ daily telemetry events through dbt and Redshift, and a weekly report that took six hours now takes thirty minutes.",
     ],
     stack: ["Python", "dbt", "Redshift", "Tableau", "scikit-learn", "SQL"],
   },
@@ -272,9 +272,9 @@ export interface LabProject {
 
 export const lab: LabProject[] = [
   {
-    title: "Event demand intelligence",
+    title: "Event Demand — Bayesian Inference",
     blurb:
-      "A real pipeline, end to end: streamed real-world event data into an S3 Data lake, staged into Snowflake, modelled in dbt, and used R to derive signals and insights through Bayesian statistical theory. The whole thing on an Airflow DAG in Docker Compose.",
+      "A real pipeline, end to end: streamed real-world event data into an S3 data lake, staged into Snowflake, and modeled in dbt. Derived signals and insights using Bayesian statistical methods and the R language, with the whole thing on an Airflow DAG.",
     lane: "Data eng · Data Science",
     tags: ["Airflow", "dbt", "Snowflake", "S3", "Docker", "R"],
     repo: "https://github.com/fxliped/event-demand-intelligence",
@@ -282,11 +282,11 @@ export const lab: LabProject[] = [
     figure: "data-pipe",
   },
   {
-    title: "Autonomous reasoning agent",
+    title: "Autonomous Reasoning Agent",
     blurb:
-      "ReAct agents that play repeated games and then read their own transcripts. An offline judge finds where the reasoning went wrong and writes a lesson the next run gets in its prompt. Team project of four.",
-    lane: "Applied AI · evaluation",
-    tags: ["Python", "ReAct", "Gemini", "Tracing"],
+      "Multi-agent system programmed to perceive, reason, act, and observe in social games to maximize victories. Implemented ideas such as social-chain-of-thought and self-correction from parametric and latent memory. Designed tools for the agent to call and a self-evolution system through RL.",
+    lane: "Data Science · Applied AI",
+    tags: ["Python", "ReAct", "Claude", "MCP", "Agent Harness"],
     repo: "https://github.com/fxliped/Autonomous-Reasoning-Agent",
     accent: "accent-orange",
     figure: "agent-game",
@@ -294,7 +294,7 @@ export const lab: LabProject[] = [
   {
     title: "Asset Edge",
     blurb:
-      "A finance research app I built to learn the whole stack: RAG over SEC filings and news, an LSTM taking a swing at the next hour of price, FastAPI behind a React front end.",
+      "A financial research application I built to serve real-time stock information, news, and forecasted insights derived from an LSTM neural network I implemented. Architected a Generative AI assistant supported by a RAG system for SEC filings and news articles, FinBERT for sentiment analysis, and FastAPI behind a React front end.",
     lane: "Applied AI · full stack",
     tags: ["FastAPI", "React", "LangChain", "ChromaDB", "PyTorch"],
     repo: "https://github.com/fxliped/GenAI-Finance-Engine",

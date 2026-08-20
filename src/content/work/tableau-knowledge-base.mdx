@@ -1,7 +1,7 @@
 ---
 title: "Making 3,000 dashboards answerable by an AI agent"
 tagline: "Airflow ETL from Tableau workbooks to an AI-ready knowledge base"
-role: "Owner — extraction, transformation, and publishing"
+role: "Owner: extraction, transformation, and publishing"
 org: "Amazon Web Services"
 period: "June 2026 — Present"
 order: 1
@@ -17,7 +17,7 @@ stack:
   ]
 figures:
   - diagram: "pipeline"
-    caption: "Extract and transform are pure — no network, no clock, no cloud SDK — so the layers that decide correctness are testable without credentials."
+    caption: "Extract and transform are pure. No network, no clock, no cloud SDK, so the layers that decide correctness are testable without credentials."
 metrics:
   - value: "3,000+"
     label: "Tableau workbooks in the pipeline"
@@ -35,7 +35,7 @@ images: []
 ## Context
 
 AWS's infrastructure org runs on Tableau. Thousands of dashboards encode how capacity gets
-measured — the definitions, the thresholds, the calculations people argue about in planning
+measured: the definitions, the thresholds, the calculations people argue about in planning
 reviews.
 
 None of it was legible to software. A dashboard is a binary archive: a zip wrapping XML,
@@ -45,7 +45,7 @@ inside. A person can open one. A retrieval system can't.
 ## The problem
 
 - **Fidelity beats coverage.** A summary that drops a calculated-field formula is worse than
-  no document — it reads authoritative while being unable to answer the actual question.
+  no document. It reads authoritative while being unable to answer the actual question.
 - **The estate moves weekly.** A one-shot dump is stale before it finishes.
 - **Scale turns soft failures hard.** At three thousand items, a 1% failure rate fails thirty
   times a run, and each one has to be survivable unattended.
@@ -54,19 +54,19 @@ inside. A person can open one. A retrieval system can't.
 
 An Airflow-orchestrated funnel, per workbook, in parallel, nothing kept on disk:
 
-1. **Extract** — unwrap the archive, parse the XML, project it into an explicit typed
+1. **Extract.** Unwrap the archive, parse the XML, project it into an explicit typed
    contract: worksheets, calculated fields, parameters, bindings, layout. That contract is
    the ceiling on what can ever reach the knowledge base, so it lives in one reviewed file
    instead of as assumptions scattered across the codebase.
-2. **Transform** — render the contract into small, single-concept Markdown with
+2. **Transform.** Render the contract into small, single-concept Markdown with
    machine-readable frontmatter. Chunking is a retrieval decision, so it belongs here.
-3. **Publish** — mirror each workbook's folder to S3, prune keys with no source, hand off to
+3. **Publish.** Mirror each workbook's folder to S3, prune keys with no source, hand off to
    curation.
 
 Extract and transform are **strictly pure**, enforced by a check rather than a convention.
 Everything touching the world lives elsewhere.
 
-I also rebuilt the platform's data model and wrote its **retrieval-evaluation framework** —
+I also rebuilt the platform's data model and wrote its **retrieval-evaluation framework**,
 which is what attributed the 13% accuracy gain to the data rather than the prompt.
 
 ## The hard part
@@ -87,12 +87,12 @@ unrecorded is where the expensive incidents hide.
 
 ## Outcome
 
-The agent answers questions about any dashboard — what it measures, how a field is
-calculated, which tables feed it — with a citation. Queryable data up 45%, accuracy up 13%,
+The agent answers questions about any dashboard, with a citation: what it measures, how a field is
+calculated, which tables feed it. Queryable data up 45%, accuracy up 13%,
 self-serve analytics reaching 5,000+ people. Refreshes are incremental and unattended.
 
 ## What I'd do differently
 
 Write the contract first, and a contract test across the seam on day one. The version I
 shipped is the third shape, and two systems exchanging documents through S3 with no shared
-schema will drift — the only question is which side notices, and how long after.
+schema will drift. The only question is which side notices, and how long after.
