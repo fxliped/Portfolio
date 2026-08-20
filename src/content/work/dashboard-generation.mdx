@@ -1,12 +1,12 @@
 ---
 title: "Dashboards from a sentence, in four minutes"
-tagline: "LangGraph + MCP tooling that builds dashboards from a prompt"
+tagline: "Strands Agent + MCP tooling that builds dashboards from a prompt"
 role: "Architect — agent tooling and generation pipeline"
 org: "Amazon Web Services"
 period: "2026"
 order: 2
 featured: true
-stack: ["Python", "LangGraph", "MCP", "Tableau", "Redshift", "SQL"]
+stack: ["Python", "Strands Agent", "MCP", "Tableau", "Redshift", "SQL"]
 figures:
   - diagram: "agent-graph"
     caption: "Generation is a graph, not a prompt chain — so failed validation has a defined place to go instead of a retry loop that burns tokens and gives up."
@@ -23,7 +23,7 @@ images: []
 ## Context
 
 Once the knowledge base could describe every existing dashboard, planners asked the inverse:
-*can it just build me the one I need?*
+_can it just build me the one I need?_
 
 The manual path took about three days — not because the work was hard, but because it was
 serial. Find someone who knows the domain, agree on definitions, locate the right tables,
@@ -46,7 +46,7 @@ metric, inspect a schema, validate a query, emit a spec — is an MCP tool with 
 contract. That keeps them reusable across the platform's agents instead of welded to one
 prompt, and independently testable.
 
-**LangGraph for control flow.** Generation branches: resolve intent, gather context, draft,
+**Strands Agent for control flow.** Generation branches: resolve intent, gather context, draft,
 validate, repair, emit. A graph makes those states explicit — and the failure paths too.
 
 **Grounding in the knowledge base from the first project**, so a new dashboard inherits the

@@ -129,7 +129,7 @@ export const experience: Role[] = [
     team: "Data Platform",
     years: "2026 —",
     title: "Software Engineer Intern",
-    period: "May 2026 — Present",
+    period: "June 2026 — Present",
     location: "Seattle, WA",
     current: true,
     bullets: [
@@ -274,9 +274,9 @@ export const lab: LabProject[] = [
   {
     title: "Event demand intelligence",
     blurb:
-      "A real pipeline, end to end: paged event data out of an API into S3, staged into Snowflake, modelled in dbt down to daily attendance by country and category — the whole thing on an Airflow DAG in Docker Compose.",
-    lane: "Data engineering",
-    tags: ["Airflow", "dbt", "Snowflake", "S3", "Docker"],
+      "A real pipeline, end to end: streamed real-world event data into an S3 Data lake, staged into Snowflake, modelled in dbt, and used R to derive signals and insights through Bayesian statistical theory. The whole thing on an Airflow DAG in Docker Compose.",
+    lane: "Data eng · Data Science",
+    tags: ["Airflow", "dbt", "Snowflake", "S3", "Docker", "R"],
     repo: "https://github.com/fxliped/event-demand-intelligence",
     accent: "accent-blue",
     figure: "data-pipe",
